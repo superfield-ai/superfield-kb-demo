@@ -207,8 +207,19 @@ WORKER_STARTED
     → CLAUDE_CLI_RUNNING        (Claude CLI reads /tmp/, edits wiki.md)
     → WRITING_NEW_VERSION       (worker reads updated wiki.md; writes new WikiPageVersion to DB via API)
     → EMBEDDING                 (new version embedded; vectors stored in pgvector)
+    → AWAITING_REVIEW           (new version written as `draft`; not visible to RMs)
+    → PUBLISHED                 (review gate satisfied; version becomes current)
     → COMPLETE                  (pod terminates; /tmp/ destroyed)
 
+    Review gate is satisfied when EITHER:
+      (a) the diff against the prior version is below a configured
+          materiality threshold (tenant-configurable; default: no
+          claims added, only citations or phrasing changes), OR
+      (b) an authorised RM or Department Admin explicitly approves
+          the draft via the annotation UI.
+
+    AWAITING_REVIEW → REJECTED  (reviewer rejects; draft archived;
+                                 prior version remains current)
     Any state → FAILED          (error logged; previous wiki version remains current)
 ```
 
@@ -240,6 +251,9 @@ DEEPCLEAN_TRIGGERED
     → CLAUDE_CLI_RUNNING    (Claude CLI rebuilds wiki from scratch; no prior wiki passed)
     → WRITING_NEW_VERSION   (new version written; source = 'deepclean')
     → EMBEDDING
+    → AWAITING_REVIEW       (deepclean always requires explicit human approval,
+                             regardless of diff materiality)
+    → PUBLISHED             (reviewer approves; version becomes current)
     → COMPLETE
 ```
 
@@ -366,7 +380,16 @@ participation is declared and auditable.
 - Simple record/stop/upload flow.
 - Recording state is preserved if the user backgrounds the app mid-recording.
 - Upload progress shown; error state with retry.
-- Transcript available in customer record once AssemblyAI completes.
+- Transcript available in customer record once transcription completes.
+
+### 5.5 Draft vs. Published Wiki Versions
+
+Every autolearn-generated `WikiPageVersion` is written as a draft and is
+invisible to RMs until it clears the publication gate (§4.3). The wiki view
+always shows the current _published_ version with a visible "N pending draft
+revisions" indicator. Drafts are reviewable inline with a diff against the
+current version. Deepclean rebuilds (§4.5) always require explicit human
+approval regardless of diff materiality.
 
 ---
 
@@ -508,7 +531,9 @@ See `docs/technical/md-file-editing.md` for the full worker flow.
 | Wiki update latency (ingestion trigger) | New wiki version available within 5 minutes of ground-truth ingestion completing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | Transcription turnaround                | Transcript available within 10 minutes of upload for recordings under 60 minutes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | API response time (wiki read)           | p95 < 500ms                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| Availability                            | 99.5% uptime for web app and PWA                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Availability                            | 99.9% uptime for web app and PWA during business hours in each tenant's primary region, with service credits on breach                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Wiki accuracy SLA                       | Per published `WikiPageVersion`: every factual claim must cite at least one ground-truth source (`CorpusChunk` reference). Published versions with uncited claims are a P1 defect. Measured by sampled audit against ground truth; target ≥ 99% claim-citation coverage.                                                                                                                                                                                                                                                                                                                 |
+| Hallucination escalation                | An annotation resolved with `DISMISSED` against an autolearn-authored passage increments a per-customer confidence counter; three dismissals within 30 days forces the next autolearn version into explicit human-approval mode regardless of materiality.                                                                                                                                                                                                                                                                                                                               |
 | Data residency                          | Customer data — raw or anonymised — does not transit external networks, with one named permanent exception: inference calls to Anthropic's private-cloud endpoint under DPA. No other external API (embedding, transcription, summarisation, analytics) may receive corpus text, derived chunks, audio, or vector embeddings. Anonymised data is treated the same as raw data under this rule. The optional AssemblyAI integration (§6) is available only to non-regulated tenants that have explicitly opted in; it is blocked at the tenant-configuration layer for regulated tenants. |
 
 ---
