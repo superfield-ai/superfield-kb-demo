@@ -167,31 +167,51 @@ IMAP_RECEIVED
 **Entry condition:** RM is authenticated in the PWA and initiates a recording.
 **Exit condition:** Transcript is stored with speaker labels and queued for autolearning.
 
+The PWA selects a path at recording start based on expected duration and tenant
+configuration. Both default paths keep raw audio inside the trust boundary.
+
+**Edge path** (short recordings, tenant default):
+
 ```
 IDLE
     → RECORDING         (RM taps record in PWA)
-    → UPLOADING         (RM stops recording; audio uploaded to backend)
-    → SUBMITTED         (backend submits to AssemblyAI)
-    → POLLING           (backend polls AssemblyAI for completion)
+    → TRANSCRIBING      (PWA transcribes locally on-device; raw audio never
+                         leaves the device)
+    → UPLOADING         (RM stops recording; only the transcript is uploaded)
     → TRANSCRIBED       (transcript with speaker labels stored in Postgres)
     → QUEUED            (autolearn worker triggered)
     → INDEXED           (wiki updated)
 
-    UPLOADING   → UPLOAD_FAILED     (network error; RM can retry)
-    POLLING     → TRANSCRIPTION_FAILED  (AssemblyAI error; stored as failed; RM notified)
+    TRANSCRIBING → TRANSCRIPTION_FAILED  (on-device model error; RM can fall
+                                          back to the worker path)
+    UPLOADING    → UPLOAD_FAILED         (network error; transcript retained
+                                          locally; RM can retry)
 ```
 
-**Speaker diarisation:** AssemblyAI speaker labels (`SPEAKER_A`, `SPEAKER_B`) are
-stored in the transcript. The autolearning agent uses speaker context when extracting
-customer interests.
+**Worker path** (longer recordings):
 
-**Target-state transcription (post-demo):** The state machine above reflects the
-demo-phase AssemblyAI path. Target state splits into two: an **edge path** where
-the PWA transcribes short recordings locally and uploads only the transcript —
-raw audio never leaves the device — and a **worker path** where longer recordings
-upload to the backend and are transcribed by a cluster-internal worker model.
-Both target paths keep raw audio inside the trust boundary and remove the §9
-data-residency exception entirely. See §6.
+```
+IDLE
+    → RECORDING         (RM taps record in PWA)
+    → UPLOADING         (RM stops recording; audio uploaded to backend over TLS)
+    → TRANSCRIBING      (cluster-internal transcription worker processes the
+                         audio; raw audio stays inside the trust boundary)
+    → TRANSCRIBED       (transcript with speaker labels stored in Postgres)
+    → QUEUED            (autolearn worker triggered)
+    → INDEXED           (wiki updated)
+
+    UPLOADING    → UPLOAD_FAILED         (network error; RM can retry)
+    TRANSCRIBING → TRANSCRIPTION_FAILED  (worker error; stored as failed; RM notified)
+```
+
+**Speaker diarisation:** Both transcription paths emit speaker labels
+(`SPEAKER_A`, `SPEAKER_B`). The autolearning agent uses speaker context when
+extracting customer interests.
+
+**Legacy path (AssemblyAI).** Available only to non-regulated tenants that have
+explicitly opted in (§6). Raw audio is submitted to and polled from AssemblyAI.
+Blocked at the tenant-configuration layer for regulated tenants. Not used in
+any default configuration.
 
 ### 4.3 Wiki Autolearning (Cron — Gardening)
 
