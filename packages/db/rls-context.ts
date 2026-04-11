@@ -27,7 +27,14 @@
 import postgres from 'postgres';
 
 type Sql = postgres.Sql;
-type TransactionSql = postgres.TransactionSql;
+
+/**
+ * `postgres.TransactionSql` extends `Omit<Sql, ...>` which strips the call
+ * signatures that make tagged-template queries work. Typing the callback as
+ * `Sql` preserves those signatures while remaining structurally compatible at
+ * runtime (TransactionSql is a strict subset).
+ */
+type TxSql = Sql;
 
 export interface RlsSessionContext {
   /** The authenticated user's entity ID. */
@@ -63,15 +70,15 @@ function escapeConfigValue(value: string): string {
 export function withRlsContext<T>(
   sqlPool: Sql,
   context: RlsSessionContext,
-  callback: (tx: TransactionSql) => Promise<T>,
+  callback: (tx: TxSql) => Promise<T>,
 ): Promise<T> {
   const { userId, tenantId } = context;
-  return sqlPool.begin((tx: TransactionSql) => {
+  return sqlPool.begin((tx) => {
     const userIdEsc = escapeConfigValue(userId);
     const tenantIdEsc = tenantId !== null ? escapeConfigValue(tenantId) : '';
     return tx
       .unsafe(`SET LOCAL app.current_user_id = '${userIdEsc}'`)
       .then(() => tx.unsafe(`SET LOCAL app.current_tenant_id = '${tenantIdEsc}'`))
-      .then(() => callback(tx));
+      .then(() => callback(tx as unknown as Sql));
   }) as unknown as Promise<T>;
 }
