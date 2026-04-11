@@ -158,7 +158,7 @@ describe('consequential operation writes to journal', () => {
     // Insert a corresponding entity (simulates the WikiPageVersion entity)
     await sql`
       INSERT INTO entities (id, type, properties)
-      VALUES (${entityId}, 'wiki_page_version', ${{ state: 'draft' }})
+      VALUES (${entityId}, 'wiki_page_version', ${sql.json({ state: 'draft' })})
     `;
 
     // Write the business journal event for the state change (published)
@@ -170,7 +170,7 @@ describe('consequential operation writes to journal', () => {
 
     // Update the entity to reflect the published state
     await sql`
-      UPDATE entities SET properties = ${{ state: 'published' }} WHERE id = ${entityId}
+      UPDATE entities SET properties = ${sql.json({ state: 'published' })} WHERE id = ${entityId}
     `;
 
     expect(row.event_type).toBe('wiki_page_version.published');

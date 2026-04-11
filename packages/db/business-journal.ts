@@ -13,7 +13,9 @@
  * journal facts.
  */
 
-import type postgres from 'postgres';
+import postgres from 'postgres';
+
+type SqlClient = postgres.Sql;
 
 export interface JournalEvent {
   event_type: string;
@@ -37,10 +39,7 @@ export interface JournalRow extends JournalEvent {
  * No PII is stored inline; use payload_ref to reference payloads stored
  * elsewhere if needed.
  */
-export async function writeJournalEvent(
-  sql: ReturnType<typeof import('postgres').default>,
-  event: JournalEvent,
-): Promise<JournalRow> {
+export async function writeJournalEvent(sql: SqlClient, event: JournalEvent): Promise<JournalRow> {
   const rows = await sql<JournalRow[]>`
     INSERT INTO business_journal (event_type, entity_id, actor_id, payload_ref)
     VALUES (
@@ -63,7 +62,7 @@ export async function writeJournalEvent(
  * TEST-C-014: genesis replay test.
  */
 export async function replayFromGenesis<S>(
-  sql: ReturnType<typeof import('postgres').default>,
+  sql: SqlClient,
   initialState: S,
   reducer: (state: S, event: JournalRow) => S,
 ): Promise<S> {
@@ -84,7 +83,7 @@ export async function replayFromGenesis<S>(
  * TEST-C-014: checkpoint replay test.
  */
 export async function replayFromCheckpoint<S>(
-  sql: ReturnType<typeof import('postgres').default>,
+  sql: SqlClient,
   fromId: string,
   initialState: S,
   reducer: (state: S, event: JournalRow) => S,
