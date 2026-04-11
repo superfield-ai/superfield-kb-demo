@@ -47,8 +47,15 @@ jobs:
       - name: Install k3s
         run: |
           curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable=traefik" sh -
-          # Wait for k3s to be ready
-          until kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get nodes 2>/dev/null | grep -q Ready; do
+          # Wait for k3s to be ready.
+          # Use sudo because /etc/rancher/k3s/k3s.yaml is root-owned until Configure kubectl
+          # copies it to ~/.kube/config. Cap at 120 s to avoid an infinite loop.
+          DEADLINE=$(( $(date +%s) + 120 ))
+          until sudo kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get nodes 2>/dev/null | grep -q Ready; do
+            if [[ $(date +%s) -gt $DEADLINE ]]; then
+              echo "Timed out waiting for k3s node to be Ready"
+              exit 1
+            fi
             echo "Waiting for k3s node to be Ready..."
             sleep 3
           done
