@@ -132,7 +132,7 @@ to the RM's session.
 
 | Data                                          | Encryption mechanism                                                                                  |
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Ground-truth text (emails, transcripts)       | Postgres full-disk encryption + column-level encryption via `pgcrypto` for highest-sensitivity fields |
+| Ground-truth text (emails, transcripts)       | Postgres full-disk encryption + column-level encryption via application-layer AES-256-GCM (Web Crypto API, HKDF-derived keys) for highest-sensitivity fields |
 | Vector embeddings                             | Postgres full-disk encryption (column-level not viable with pgvector)                                 |
 | Wiki pages                                    | Postgres full-disk encryption                                                                         |
 | IdentityDictionary                            | Postgres full-disk encryption + column-level encryption on all identity fields                        |
