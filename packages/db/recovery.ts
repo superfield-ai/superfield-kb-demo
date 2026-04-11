@@ -57,9 +57,10 @@ function bytesToHex(bytes: Uint8Array): string {
     .join('');
 }
 
-/** Decode hex string to bytes. */
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
+/** Decode hex string to bytes backed by a plain ArrayBuffer (required by SubtleCrypto). */
+function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
+  const buffer = new ArrayBuffer(hex.length / 2);
+  const bytes = new Uint8Array(buffer);
   for (let i = 0; i < bytes.length; i++) {
     bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
   }
