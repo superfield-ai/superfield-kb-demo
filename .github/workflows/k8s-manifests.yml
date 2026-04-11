@@ -113,7 +113,8 @@ jobs:
             # Flag any `data:` block followed by non-placeholder base64 content.
             # A simple heuristic: look for lines with a colon followed by 20+ random chars
             # that are not wrapped in angle brackets (i.e. not template placeholders).
-            if grep -E '^\s+[A-Za-z_]+:\s+[A-Za-z0-9+/]{20,}={0,2}\s*$' "$manifest" 2>/dev/null | grep -v '<'; then
+            # Exclude filesystem paths (values starting with /) and template placeholders (<...>).
+            if grep -E '^\s+[A-Za-z_]+:\s+[A-Za-z0-9+/]{20,}={0,2}\s*$' "$manifest" 2>/dev/null | grep -v '<' | grep -Ev ':\s+/'; then
               echo "WARN: possible plaintext secret blob in $manifest"
               FAIL=1
             fi
