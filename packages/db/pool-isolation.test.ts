@@ -225,22 +225,22 @@ describe('kb_analytics post-init state', () => {
 
 describe('disjoint key domain identifiers', () => {
   test('app and audit key domains are disjoint', () => {
-    const appKeys = new Set(KEY_DOMAINS.app);
-    const auditKeys = new Set(KEY_DOMAINS.audit);
+    const appKeys = new Set<string>(KEY_DOMAINS.app);
+    const auditKeys = new Set<string>(KEY_DOMAINS.audit);
     const intersection = [...appKeys].filter((k) => auditKeys.has(k));
     expect(intersection).toHaveLength(0);
   });
 
   test('app and dictionary key domains are disjoint', () => {
-    const appKeys = new Set(KEY_DOMAINS.app);
-    const dictKeys = new Set(KEY_DOMAINS.dictionary);
+    const appKeys = new Set<string>(KEY_DOMAINS.app);
+    const dictKeys = new Set<string>(KEY_DOMAINS.dictionary);
     const intersection = [...appKeys].filter((k) => dictKeys.has(k));
     expect(intersection).toHaveLength(0);
   });
 
   test('audit and dictionary key domains are disjoint', () => {
-    const auditKeys = new Set(KEY_DOMAINS.audit);
-    const dictKeys = new Set(KEY_DOMAINS.dictionary);
+    const auditKeys = new Set<string>(KEY_DOMAINS.audit);
+    const dictKeys = new Set<string>(KEY_DOMAINS.dictionary);
     const intersection = [...auditKeys].filter((k) => dictKeys.has(k));
     expect(intersection).toHaveLength(0);
   });
