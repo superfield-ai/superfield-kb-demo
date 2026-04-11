@@ -250,7 +250,7 @@ describe.skipIf(!hasAwsCreds)('AwsKmsBackend — staging contract (requires AWS_
     // Use the plaintext data key for AES-256-GCM encryption
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
-      dk.plaintextKey,
+      dk.plaintextKey.buffer as ArrayBuffer,
       { name: 'AES-GCM', length: 256 },
       false,
       ['encrypt', 'decrypt'],
@@ -269,7 +269,7 @@ describe.skipIf(!hasAwsCreds)('AwsKmsBackend — staging contract (requires AWS_
     const recoveredKey = await backend.decryptDataKey(dk.encryptedKey, ctx);
     const decryptKey = await crypto.subtle.importKey(
       'raw',
-      recoveredKey,
+      recoveredKey.buffer as ArrayBuffer,
       { name: 'AES-GCM', length: 256 },
       false,
       ['decrypt'],
@@ -287,7 +287,7 @@ describe.skipIf(!hasAwsCreds)('AwsKmsBackend — staging contract (requires AWS_
     // New data key must be usable for round-trip encryption
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
-      rotation.newDataKey.plaintextKey,
+      rotation.newDataKey.plaintextKey.buffer as ArrayBuffer,
       { name: 'AES-GCM', length: 256 },
       false,
       ['encrypt', 'decrypt'],
@@ -301,7 +301,7 @@ describe.skipIf(!hasAwsCreds)('AwsKmsBackend — staging contract (requires AWS_
     );
     const decryptKey = await crypto.subtle.importKey(
       'raw',
-      rotation.newDataKey.plaintextKey,
+      rotation.newDataKey.plaintextKey.buffer as ArrayBuffer,
       { name: 'AES-GCM', length: 256 },
       false,
       ['decrypt'],
@@ -334,7 +334,7 @@ describe.skipIf(!hasVaultCreds)(
 
       const cryptoKey = await crypto.subtle.importKey(
         'raw',
-        dk.plaintextKey,
+        dk.plaintextKey.buffer as ArrayBuffer,
         { name: 'AES-GCM', length: 256 },
         false,
         ['encrypt', 'decrypt'],
@@ -351,7 +351,7 @@ describe.skipIf(!hasVaultCreds)(
       const recoveredKey = await backend.decryptDataKey(dk.encryptedKey, ctx);
       const decryptKey = await crypto.subtle.importKey(
         'raw',
-        recoveredKey,
+        recoveredKey.buffer as ArrayBuffer,
         { name: 'AES-GCM', length: 256 },
         false,
         ['decrypt'],

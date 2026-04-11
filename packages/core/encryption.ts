@@ -148,7 +148,7 @@ async function getDerivedKey(entityType: string): Promise<CryptoKey> {
 
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
-    dataKey.plaintextKey,
+    dataKey.plaintextKey.buffer as ArrayBuffer,
     { name: 'AES-GCM', length: 256 },
     false,
     ['encrypt', 'decrypt'],

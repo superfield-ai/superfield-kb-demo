@@ -149,17 +149,19 @@ export class LocalDevKmsBackend implements KmsBackend {
       throw new KmsUnavailableError('LocalDevKmsBackend requires ENCRYPTION_MASTER_KEY to be set');
     }
 
-    let rawBytes: Uint8Array;
+    let rawBytes: Uint8Array<ArrayBuffer>;
     if (/^[0-9a-fA-F]{64}$/.test(hex)) {
       const pairs = hex.match(/.{2}/g)!;
-      rawBytes = new Uint8Array(pairs.length);
+      const buf = new ArrayBuffer(pairs.length);
+      rawBytes = new Uint8Array(buf);
       for (let i = 0; i < pairs.length; i++) {
         rawBytes[i] = parseInt(pairs[i], 16);
       }
     } else {
       // treat as base64
       const binaryString = atob(hex);
-      rawBytes = new Uint8Array(binaryString.length);
+      const buf = new ArrayBuffer(binaryString.length);
+      rawBytes = new Uint8Array(buf);
       for (let i = 0; i < binaryString.length; i++) {
         rawBytes[i] = binaryString.charCodeAt(i);
       }
@@ -186,13 +188,13 @@ export class LocalDevKmsBackend implements KmsBackend {
       {
         name: 'HKDF',
         hash: 'SHA-256',
-        salt: new Uint8Array(32),
+        salt: new Uint8Array(new ArrayBuffer(32)),
         info,
       },
       master,
       256,
     );
-    return new Uint8Array(bits);
+    return new Uint8Array(bits as ArrayBuffer);
   }
 
   async generateDataKey(encryptionContext: Record<string, string>): Promise<DataKey> {
@@ -408,10 +410,10 @@ export class AwsKmsBackend implements KmsBackend {
     );
 
     // Derive signing key
-    const hmac = async (key: ArrayBuffer, data: string) => {
+    const hmac = async (key: ArrayBuffer | Uint8Array, data: string) => {
       const cryptoKey = await crypto.subtle.importKey(
         'raw',
-        key,
+        key instanceof Uint8Array ? (key.buffer as ArrayBuffer) : key,
         { name: 'HMAC', hash: 'SHA-256' },
         false,
         ['sign'],
