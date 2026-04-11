@@ -151,7 +151,7 @@ export function loadFixturesFromDir(fixtureDir: string): GoldenFixture[] {
 // Handler factories
 // ---------------------------------------------------------------------------
 
-function buildResponseFromFixture(fixture: GoldenFixture): HttpResponse {
+function buildResponseFromFixture(fixture: GoldenFixture): HttpResponse<string> {
   // Strip content-encoding — fixtures store decoded body but may retain
   // the original gzip/br header from the real API recording.
   const headers = { ...fixture.response.headers };
