@@ -283,7 +283,6 @@ describe('forced audit write failure denies read (AC-2 / TP-2)', () => {
     // Simulate audit write failure by attempting to insert a row with a missing
     // required column (entity_type is NOT NULL — omitting it forces a DB error).
     let auditFailed = false;
-    let readResult: Record<string, unknown>[] = [];
 
     try {
       // This insert will fail because entity_type is NOT NULL
@@ -299,13 +298,8 @@ describe('forced audit write failure denies read (AC-2 / TP-2)', () => {
     }
 
     // Because the audit write failed, the read must not proceed
-    if (auditFailed) {
-      // The read is denied — return no data
-      readResult = [];
-    } else {
-      readResult = await appAdminSql<Record<string, unknown>[]>`
-        SELECT id FROM entities WHERE id = ${entityId}
-      `;
+    if (!auditFailed) {
+      await appAdminSql`SELECT id FROM entities WHERE id = ${entityId}`;
     }
 
     expect(auditFailed).toBe(true);

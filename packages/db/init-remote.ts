@@ -454,7 +454,7 @@ async function verifyTableGrant(
   return count >= 1 ? null : `${roleName} missing ${privilegeType} on ${tableName}`;
 }
 
-async function verifyColumnGrant(
+async function _verifyColumnGrant(
   db: ReturnType<typeof makePool>,
   tableName: string,
   columnName: string,
