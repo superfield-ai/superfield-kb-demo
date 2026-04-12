@@ -288,7 +288,7 @@ export class PiiTokeniser {
     const keyBytes = await deriveTenantKeyBytes(this.tenantId);
     this.tenantKey = await crypto.subtle.importKey(
       'raw',
-      keyBytes,
+      keyBytes.buffer as ArrayBuffer,
       { name: 'HMAC', hash: 'SHA-256' },
       false,
       ['sign'],
@@ -498,9 +498,13 @@ async function deriveTenantKeyBytes(tenantId: string): Promise<Uint8Array> {
     for (let i = 0; i < binaryString.length; i++) masterBytes[i] = binaryString.charCodeAt(i);
   }
 
-  const masterKey = await crypto.subtle.importKey('raw', masterBytes, { name: 'HKDF' }, false, [
-    'deriveBits',
-  ]);
+  const masterKey = await crypto.subtle.importKey(
+    'raw',
+    masterBytes.buffer as ArrayBuffer,
+    { name: 'HKDF' },
+    false,
+    ['deriveBits'],
+  );
 
   const bits = await crypto.subtle.deriveBits(
     {
