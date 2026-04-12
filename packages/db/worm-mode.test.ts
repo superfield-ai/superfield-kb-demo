@@ -21,13 +21,12 @@ import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import postgres from 'postgres';
 import { startPostgres, type PgContainer } from './pg-container';
 import { migrate } from './index';
-import { createApprovalRequest, castVote, markExecuted, PRIVILEGED_OPERATIONS } from './approvals';
+import { createApprovalRequest, castVote, PRIVILEGED_OPERATIONS } from './approvals';
 import {
   isWormEnabled,
   enableWorm,
   checkWormUpdateGuard,
   WormApprovalRequiredError,
-  WormUpdateBlockedError,
   InsufficientRoleError,
 } from './worm-mode';
 
