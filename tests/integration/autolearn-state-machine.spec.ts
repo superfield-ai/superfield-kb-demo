@@ -42,7 +42,6 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import postgres from 'postgres';
 import { startPostgres, type PgContainer } from 'db/pg-container';
 import { migrate } from 'db/index';
 import {
