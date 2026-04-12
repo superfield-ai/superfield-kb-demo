@@ -62,7 +62,12 @@ import {
   BasicTracerProvider,
   SimpleSpanProcessor,
   InMemorySpanExporter,
+  type ReadableSpan,
 } from '@opentelemetry/sdk-trace-base';
+
+// Re-export ReadableSpan so consumers in other packages do not need a direct
+// dependency on @opentelemetry/sdk-trace-base.
+export type { ReadableSpan };
 import {
   MeterProvider,
   PeriodicExportingMetricReader,

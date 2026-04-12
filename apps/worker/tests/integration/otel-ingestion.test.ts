@@ -26,11 +26,11 @@ import {
   resetTelemetry,
   INGESTION_HOPS,
   scrubSpanAttributes,
+  type ReadableSpan,
 } from '../../../../packages/core/telemetry';
 import { fetchNewMessages } from '../../../../packages/core/imap-etl-worker';
 import { executeEmailIngestTask, buildEmailIngestPayload } from '../../src/email-ingest-job';
 import { startGreenmail, type GreenmailContainer } from '../../../../packages/db/imap-container';
-import type { ReadableSpan } from '@opentelemetry/sdk-trace-base';
 
 let gm: GreenmailContainer;
 
