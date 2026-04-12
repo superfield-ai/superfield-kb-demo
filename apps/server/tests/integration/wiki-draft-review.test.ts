@@ -40,7 +40,7 @@ let server: Subprocess;
 let sql: ReturnType<typeof postgres>;
 
 // Designated approver ID injected via APPROVER_IDS env var for this test run.
-const APPROVER_ID_PLACEHOLDER = 'wiki-draft-review-approver';
+const _APPROVER_ID_PLACEHOLDER = 'wiki-draft-review-approver';
 
 beforeAll(async () => {
   pg = await startPostgres();
@@ -75,7 +75,7 @@ beforeAll(async () => {
       TEST_MODE: 'true',
       CSRF_DISABLED: 'true',
       // The approver session will resolve to a user whose ID starts with
-      // APPROVER_ID_PLACEHOLDER; we set APPROVER_IDS to a sentinel that is
+      // _APPROVER_ID_PLACEHOLDER; we set APPROVER_IDS to a sentinel that is
       // matched after the test session creates the user.  The real approver
       // ID is determined dynamically in each test that needs it.
     },
