@@ -35,6 +35,7 @@ const SERVER_ENTRY = 'apps/server/src/index.ts';
 let pg: PgContainer;
 let server: Subprocess;
 let authCookie = '';
+let csrfToken = '';
 
 beforeAll(async () => {
   pg = await startPostgres();
@@ -56,6 +57,7 @@ beforeAll(async () => {
 
   const session = await createTestSession(BASE);
   authCookie = session.cookie;
+  csrfToken = session.csrfToken;
 }, 60_000);
 
 afterAll(async () => {
@@ -201,7 +203,11 @@ test('POST /api/tasks-queue enqueues a transcription task (worker path)', async 
   const stamp = Date.now();
   const res = await fetch(`${BASE}/api/tasks-queue`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: authCookie },
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: authCookie,
+      'X-CSRF-Token': csrfToken,
+    },
     body: JSON.stringify({
       idempotency_key: `transcription-worker-${stamp}`,
       agent_type: 'transcription',
@@ -228,7 +234,11 @@ test('Transcription task payload with correlation_ref is accepted', async () => 
   const stamp = Date.now();
   const res = await fetch(`${BASE}/api/tasks-queue`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: authCookie },
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: authCookie,
+      'X-CSRF-Token': csrfToken,
+    },
     body: JSON.stringify({
       idempotency_key: `transcription-corr-${stamp}`,
       agent_type: 'transcription',
