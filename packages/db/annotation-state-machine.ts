@@ -271,22 +271,22 @@ async function emitAuditEvent(options: {
 
   const hash = await computeAuditHash(prevHash, payload);
 
-  await auditSql`
-    INSERT INTO audit_events
-      (actor_id, action, entity_type, entity_id, before, after, ts, prev_hash, hash)
-    VALUES
-      (
-        ${payload.actor_id},
-        ${payload.action},
-        ${payload.entity_type},
-        ${payload.entity_id},
-        ${payload.before as Record<string, unknown> | null},
-        ${payload.after as Record<string, unknown>},
-        ${payload.ts},
-        ${prevHash},
-        ${hash}
-      )
-  `;
+  await auditSql.unsafe(
+    `INSERT INTO audit_events
+       (actor_id, action, entity_type, entity_id, before, after, ts, prev_hash, hash)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::timestamptz, $8, $9)`,
+    [
+      payload.actor_id,
+      payload.action,
+      payload.entity_type,
+      payload.entity_id,
+      payload.before as unknown as string,
+      payload.after as unknown as string,
+      payload.ts,
+      prevHash,
+      hash,
+    ],
+  );
 }
 
 /**
