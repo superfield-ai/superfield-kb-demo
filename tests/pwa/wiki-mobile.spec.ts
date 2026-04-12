@@ -114,7 +114,7 @@ test('citation tap fires the interaction on a touch viewport', async ({ page }, 
 
     // Attach the delegated touch listener that mirrors WikiRender's production
     // handler.  This verifies the listener pattern works in a real browser.
-    (window as Record<string, unknown>).__citationTapFired = false;
+    (window as unknown as Record<string, unknown>).__citationTapFired = false;
     article.addEventListener(
       'touchend',
       (event: TouchEvent) => {
@@ -122,7 +122,7 @@ test('citation tap fires the interaction on a touch viewport', async ({ page }, 
         const citation = target.closest('sup.wiki-citation');
         if (citation && (citation as HTMLElement).dataset.citationId) {
           event.preventDefault();
-          (window as Record<string, unknown>).__citationTapFired = true;
+          (window as unknown as Record<string, unknown>).__citationTapFired = true;
         }
       },
       { passive: false },
@@ -136,7 +136,9 @@ test('citation tap fires the interaction on a touch viewport', async ({ page }, 
     // Simulate a touch tap using Playwright's tap action.
     await sup.tap();
 
-    const fired = await page.evaluate(() => (window as Record<string, unknown>).__citationTapFired);
+    const fired = await page.evaluate(
+      () => (window as unknown as Record<string, unknown>).__citationTapFired,
+    );
     expect(fired).toBe(true);
   } else {
     // On desktop, a regular click verifies the same pattern.
