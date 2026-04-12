@@ -121,7 +121,6 @@ export function WikiRender({
       data-wiki-version-id={version.id}
       data-wiki-state={version.state}
       // DOMPurify-sanitised HTML — safe to inject.
-      // eslint-disable-next-line react/no-danger
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

@@ -104,7 +104,7 @@ test('strips inline event handlers from injected HTML', async () => {
 
 test('strips javascript: href from injected anchor', async () => {
   const malicious = '<a href="javascript:void(0)">click me</a>';
-  const screen = render(<WikiRender version={makeVersion(malicious)} />);
+  render(<WikiRender version={makeVersion(malicious)} />);
   // The text may still appear (DOMPurify strips the href not the element
   // when the href is the only dangerous part) but no `javascript:` href
   // must survive in the DOM.
