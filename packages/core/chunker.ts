@@ -108,7 +108,7 @@ export function countTokens(text: string): number {
 function splitIntoSentences(text: string): string[] {
   // Split on sentence-ending punctuation followed by whitespace.
   // Use a lookahead so the punctuation stays with the preceding sentence.
-  const raw = text.split(/(?<=[.!?]['"'\)\]}\s]*)\s+/);
+  const raw = text.split(/(?<=[.!?]['"')\]}\s]*)\s+/);
   return raw.map((s) => s.trim()).filter((s) => s.length > 0);
 }
 

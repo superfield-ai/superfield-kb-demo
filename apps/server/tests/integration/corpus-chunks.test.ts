@@ -30,7 +30,6 @@ const SERVER_ENTRY = 'apps/server/src/index.ts';
 let pg: PgContainer;
 let server: Subprocess;
 let authCookie = '';
-let csrfToken = '';
 let superuserCookie = '';
 let superuserId = '';
 
