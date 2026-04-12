@@ -176,7 +176,7 @@ export const LEGAL_TRANSITIONS: Readonly<
     const merged = Array.from(new Set([...edgeTargets, ...workerTargets]));
     return [state, merged];
   }),
-) as Readonly<Record<TranscriptionState, readonly TranscriptionState[]>>;
+) as unknown as Readonly<Record<TranscriptionState, readonly TranscriptionState[]>>;
 
 /** Terminal states — no further transitions are possible from these states. */
 export const TERMINAL_STATES: ReadonlySet<TranscriptionState> = new Set([
