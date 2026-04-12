@@ -202,7 +202,7 @@ describe('executeEmailIngestTask — permanent failure isolation', () => {
     await gm.sendMail('Task execution test', 'Body for task execution test');
 
     const payload = buildEmailIngestPayload('test-mailbox');
-    const result = await executeEmailIngestTask(payload as Record<string, unknown>, env);
+    const result = await executeEmailIngestTask(payload as unknown as Record<string, unknown>, env);
 
     expect(result.status).toBe('completed');
     expect(result.fetched_count).toBeGreaterThanOrEqual(1);
