@@ -138,9 +138,9 @@ test('beforeinstallprompt can be suppressed via preventDefault', async ({ page }
 
   const handle = await stubBeforeInstallPrompt(page);
 
-  // The stub fires the event with prompt() available — verify prompt was called
-  // by the stub's own listener setup.
-  expect(await handle.wasPromptCalled()).toBe(true);
+  // The app shell calls e.preventDefault() on beforeinstallprompt to suppress
+  // the browser's native mini-infobar — verify that happened.
+  expect(await handle.wasDefaultPrevented()).toBe(true);
 });
 
 test('install banner renders on Android Chrome when beforeinstallprompt fires', async ({
@@ -156,14 +156,8 @@ test('install banner renders on Android Chrome when beforeinstallprompt fires', 
   await page.goto('/');
 
   // Mobile install gate is shown for non-standalone Android visitors.
-  // The install button should be visible.
-  const installButton = page
-    .getByRole('button', { name: 'Show install steps' })
-    .or(page.getByRole('button', { name: 'Install app' }));
-
-  await expect(
-    installButton.or(page.getByRole('heading', { name: 'Instantly Install Mobile App' })),
-  ).toBeVisible();
+  // The heading should be visible.
+  await expect(page.getByRole('heading', { name: 'Instantly Install Mobile App' })).toBeVisible();
 });
 
 test('iOS Safari install banner renders for non-standalone iOS visitors', async ({

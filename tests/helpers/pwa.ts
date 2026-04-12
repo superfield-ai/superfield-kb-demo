@@ -109,7 +109,23 @@ export async function stubBeforeInstallPrompt(page: Page) {
     const event = new Event('beforeinstallprompt', { cancelable: true }) as unknown as Event & {
       prompt: () => Promise<void>;
       userChoice: Promise<{ outcome: 'accepted'; platform: 'web' }>;
+      defaultWasPrevented: boolean;
     };
+
+    Object.defineProperty(event, 'defaultWasPrevented', {
+      configurable: true,
+      writable: true,
+      value: false,
+    });
+
+    const originalPreventDefault = event.preventDefault.bind(event);
+    Object.defineProperty(event, 'preventDefault', {
+      configurable: true,
+      value: () => {
+        originalPreventDefault();
+        (event as typeof event & { defaultWasPrevented: boolean }).defaultWasPrevented = true;
+      },
+    });
 
     Object.defineProperty(event, 'prompt', {
       configurable: true,
@@ -123,12 +139,31 @@ export async function stubBeforeInstallPrompt(page: Page) {
       value: Promise.resolve({ outcome: 'accepted', platform: 'web' as const }),
     });
 
+    global.__pwaBeforeInstallPrompt = {
+      ...(global.__pwaBeforeInstallPrompt ?? {}),
+      promptCalls: 0,
+    };
+
+    // Store reference so wasDefaultPrevented can inspect it
+    (global as typeof global & { __pwaLastInstallEvent?: typeof event }).__pwaLastInstallEvent =
+      event;
+
     window.dispatchEvent(event);
   });
 
   return {
     wasPromptCalled: async () =>
       page.evaluate(() => Boolean((window as PwaWindow).__pwaBeforeInstallPrompt?.promptCalls)),
+    wasDefaultPrevented: async () =>
+      page.evaluate(() =>
+        Boolean(
+          (
+            window as Window & {
+              __pwaLastInstallEvent?: { defaultWasPrevented?: boolean };
+            }
+          ).__pwaLastInstallEvent?.defaultWasPrevented,
+        ),
+      ),
   };
 }
 

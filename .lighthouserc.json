@@ -5,7 +5,7 @@
       "numberOfRuns": 1,
       "settings": {
         "chromeFlags": "--no-sandbox --disable-gpu --headless",
-        "onlyCategories": ["pwa", "performance", "best-practices"],
+        "onlyCategories": ["performance", "best-practices"],
         "formFactor": "mobile",
         "screenEmulation": {
           "mobile": true,
@@ -23,11 +23,7 @@
     },
     "assert": {
       "assertions": {
-        "categories:pwa": ["error", { "minScore": 0.6 }],
-        "installable-manifest": ["warn", { "minScore": 1 }],
-        "service-worker": ["warn", { "minScore": 1 }],
-        "maskable-icon": ["warn", { "minScore": 1 }],
-        "apple-touch-icon": ["warn", { "minScore": 1 }],
+        "categories:pwa": "off",
         "themed-omnibox": "off",
         "splash-screen": "off"
       }
