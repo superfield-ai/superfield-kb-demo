@@ -24,7 +24,6 @@ import {
   InMemoryIdentityStore,
   detectPiiSpans,
   TokenCollisionError,
-  type PiiEntityType,
 } from './pii-tokeniser';
 
 // ---------------------------------------------------------------------------
@@ -252,9 +251,9 @@ describe('fixture corpus — email tokenisation', () => {
     const result = await t.tokenise(raw);
 
     // The fixture email should contain at least one email address.
-    expect(raw).toMatch(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+    expect(raw).toMatch(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
     // The tokenised output must not contain any email address pattern.
-    expect(result.text).not.toMatch(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+    expect(result.text).not.toMatch(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
   });
 
   it('customer-inquiry: at least one token registered in store', async () => {

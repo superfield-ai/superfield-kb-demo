@@ -330,11 +330,11 @@ export function detectPiiSpans(text: string): PiiSpan[] {
   };
 
   // Email addresses (must come before generic word patterns)
-  add('EMAIL', /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+  add('EMAIL', /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
 
   // Phone numbers — North American (XXX-XXX-XXXX, (XXX) XXX-XXXX) and
   // international (+1 XXX XXX XXXX, +44 XXXX XXXXXX, etc.)
-  add('PHONE', /(?:\+\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/);
+  add('PHONE', /(?:\+\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/);
 
   // Organisation names: one or more capitalised words followed by Corp/Inc/Ltd/LLC/Co
   add('ORG', /(?:[A-Z][a-z]+\s+)+(?:Corp|Inc|Ltd|LLC|Co)\.?/);
