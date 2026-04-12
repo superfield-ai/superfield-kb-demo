@@ -23,14 +23,34 @@
 import { expect, test } from '@playwright/test';
 
 // ---------------------------------------------------------------------------
-// Helper: sign in via the UI login form
+// Helper: sign in via the TEST_MODE session backdoor
+//
+// The app uses passkey-only auth — there is no username/password form to fill.
+// In CI (TEST_MODE=true), /api/test/session issues a session cookie without
+// going through the WebAuthn ceremony, allowing Playwright tests to reach
+// authenticated pages.
 // ---------------------------------------------------------------------------
 
-async function loginViaUi(
+async function loginViaTestSession(
   page: import('@playwright/test').Page,
-  username = 'test-rm',
-  password = 'password',
+  username = 'pwa-test-user',
 ) {
+  // Use the Playwright request context to call the test backdoor and obtain
+  // a session cookie, then inject it into the browser context.
+  const response = await page.request.post('/api/test/session', {
+    data: { username },
+  });
+
+  if (!response.ok()) {
+    throw new Error(
+      `test session backdoor returned ${response.status()} — ` +
+        `ensure TEST_MODE=true is set for the dev server`,
+    );
+  }
+
+  // The server issues a Set-Cookie header; page.request already handles
+  // cookies automatically for same-origin requests, so navigating now
+  // will use the session cookie.
   await page.goto('/');
 
   // On mobile the MobileGate may intercept — skip it if present.
@@ -38,11 +58,6 @@ async function loginViaUi(
   if (await skipBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
     await skipBtn.click();
   }
-
-  // Fill in credentials and submit.
-  await page.getByPlaceholder('username').fill(username);
-  await page.getByPlaceholder('••••••••').fill(password);
-  await page.getByRole('button', { name: 'Sign In', exact: true }).click();
 
   // Wait until the main nav is rendered (confirms auth passed).
   await expect(page.getByTestId('nav-wiki')).toBeVisible({ timeout: 15_000 });
@@ -55,7 +70,7 @@ async function loginViaUi(
 test('wiki view renders on the mobile viewport', async ({ page }, testInfo) => {
   // The wiki view is rendered within the app after login — navigate and assert
   // the core container is present on all viewport sizes.
-  await loginViaUi(page);
+  await loginViaTestSession(page);
 
   // Tap / click the wiki nav button to activate the wiki view.
   await page.getByTestId('nav-wiki').click();
@@ -76,7 +91,7 @@ test('wiki view renders on the mobile viewport', async ({ page }, testInfo) => {
 // ---------------------------------------------------------------------------
 
 test('version history panel is visible on the mobile viewport', async ({ page }) => {
-  await loginViaUi(page);
+  await loginViaTestSession(page);
   await page.getByTestId('nav-wiki').click();
 
   // The wiki view renders the history panel (sidebar) and a loading spinner
@@ -95,7 +110,7 @@ test('version history panel is visible on the mobile viewport', async ({ page })
 // ---------------------------------------------------------------------------
 
 test('citation tap fires the interaction on a touch viewport', async ({ page }, testInfo) => {
-  await loginViaUi(page);
+  await loginViaTestSession(page);
   await page.getByTestId('nav-wiki').click();
 
   // Wait for the wiki view to fully mount.
