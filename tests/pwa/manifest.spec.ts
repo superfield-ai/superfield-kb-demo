@@ -133,13 +133,20 @@ test('app shell HTML has Apple PWA meta tags', async ({ page }) => {
 // Install prompt — beforeinstallprompt scenario
 // ---------------------------------------------------------------------------
 
-test('beforeinstallprompt can be suppressed via preventDefault', async ({ page }) => {
+test('beforeinstallprompt can be suppressed via preventDefault', async ({ page }, testInfo) => {
+  // The MobileInstallPage registers a beforeinstallprompt listener that calls
+  // e.preventDefault() to suppress the browser's native mini-infobar.  That
+  // page is only rendered for mobile UA profiles; skip on desktop-chrome.
+  if (testInfo.project.name === 'desktop-chrome') {
+    test.skip();
+    return;
+  }
+
   await page.goto('/');
 
   const handle = await stubBeforeInstallPrompt(page);
 
-  // The app shell calls e.preventDefault() on beforeinstallprompt to suppress
-  // the browser's native mini-infobar — verify that happened.
+  // Verify the app called e.preventDefault() to suppress the mini-infobar.
   expect(await handle.wasDefaultPrevented()).toBe(true);
 });
 

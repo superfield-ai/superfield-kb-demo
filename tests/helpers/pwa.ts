@@ -10,6 +10,7 @@ type PwaWindow = Window & {
   __pwaBeforeInstallPrompt?: {
     promptCalls?: number;
   };
+  __pwaLastInstallDefaultPrevented?: boolean;
   __pwaGetUserMedia?: {
     calls?: number;
     lastConstraints?: MediaStreamConstraints;
@@ -100,6 +101,11 @@ export async function applyStandaloneDisplayMode(page: Page, preset: PwaDevicePr
 }
 
 export async function stubBeforeInstallPrompt(page: Page) {
+  // Wait for the app shell to finish mounting its event listeners.
+  // React's useEffect runs after the initial render; networkidle ensures
+  // all deferred scripts and hydration are done before we fire the event.
+  await page.waitForLoadState('networkidle');
+
   await page.evaluate(() => {
     const global = window as PwaWindow;
     global.__pwaBeforeInstallPrompt = {
@@ -109,23 +115,7 @@ export async function stubBeforeInstallPrompt(page: Page) {
     const event = new Event('beforeinstallprompt', { cancelable: true }) as unknown as Event & {
       prompt: () => Promise<void>;
       userChoice: Promise<{ outcome: 'accepted'; platform: 'web' }>;
-      defaultWasPrevented: boolean;
     };
-
-    Object.defineProperty(event, 'defaultWasPrevented', {
-      configurable: true,
-      writable: true,
-      value: false,
-    });
-
-    const originalPreventDefault = event.preventDefault.bind(event);
-    Object.defineProperty(event, 'preventDefault', {
-      configurable: true,
-      value: () => {
-        originalPreventDefault();
-        (event as typeof event & { defaultWasPrevented: boolean }).defaultWasPrevented = true;
-      },
-    });
 
     Object.defineProperty(event, 'prompt', {
       configurable: true,
@@ -139,31 +129,18 @@ export async function stubBeforeInstallPrompt(page: Page) {
       value: Promise.resolve({ outcome: 'accepted', platform: 'web' as const }),
     });
 
-    global.__pwaBeforeInstallPrompt = {
-      ...(global.__pwaBeforeInstallPrompt ?? {}),
-      promptCalls: 0,
-    };
-
-    // Store reference so wasDefaultPrevented can inspect it
-    (global as typeof global & { __pwaLastInstallEvent?: typeof event }).__pwaLastInstallEvent =
-      event;
-
+    // dispatchEvent is synchronous — all listeners run before it returns.
+    // Capture defaultPrevented immediately after so it reflects any
+    // preventDefault() calls made by the app's handler.
     window.dispatchEvent(event);
+    global.__pwaLastInstallDefaultPrevented = event.defaultPrevented;
   });
 
   return {
     wasPromptCalled: async () =>
       page.evaluate(() => Boolean((window as PwaWindow).__pwaBeforeInstallPrompt?.promptCalls)),
     wasDefaultPrevented: async () =>
-      page.evaluate(() =>
-        Boolean(
-          (
-            window as Window & {
-              __pwaLastInstallEvent?: { defaultWasPrevented?: boolean };
-            }
-          ).__pwaLastInstallEvent?.defaultWasPrevented,
-        ),
-      ),
+      page.evaluate(() => Boolean((window as PwaWindow).__pwaLastInstallDefaultPrevented)),
   };
 }
 
