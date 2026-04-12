@@ -53,6 +53,14 @@ export interface RlsSessionContext {
    * Issue #50 — RLS-enforced my-customers-only wiki visibility.
    */
   rmCustomerIds?: string[];
+  /**
+   * Phase 7 scout seam for BDM campaign-analysis sessions.
+   *
+   * The follow-on BDM issue will thread this through the session binding so a
+   * BDM-scoped transaction can be distinguished from an RM-scoped one without
+   * changing the underlying app_rw database role yet.
+   */
+  bdmDepartmentId?: string;
 }
 
 /**
@@ -84,7 +92,7 @@ export function withRlsContext<T>(
   context: RlsSessionContext,
   callback: (tx: TxSql) => Promise<T>,
 ): Promise<T> {
-  const { userId, tenantId, rmCustomerIds } = context;
+  const { userId, tenantId, rmCustomerIds, bdmDepartmentId } = context;
   return sqlPool.begin((tx) => {
     const userIdEsc = escapeConfigValue(userId);
     const tenantIdEsc = tenantId !== null ? escapeConfigValue(tenantId) : '';
@@ -98,6 +106,13 @@ export function withRlsContext<T>(
       .unsafe(`SET LOCAL app.current_user_id = '${userIdEsc}'`)
       .then(() => tx.unsafe(`SET LOCAL app.current_tenant_id = '${tenantIdEsc}'`))
       .then(() => tx.unsafe(`SET LOCAL app.current_rm_customer_ids = '${customerIdsEsc}'`))
+      .then(() =>
+        bdmDepartmentId !== undefined
+          ? tx.unsafe(
+              `SET LOCAL app.current_bdm_department_id = '${escapeConfigValue(bdmDepartmentId)}'`,
+            )
+          : tx,
+      )
       .then(() => callback(tx as unknown as Sql));
   }) as unknown as Promise<T>;
 }
