@@ -45,7 +45,6 @@ import {
 import { handleReidentificationRequest } from './api/reidentification';
 import { handleIngestionRequest } from './api/ingestion';
 import { handleCorpusChunksRequest, registerCorpusChunkEntityType } from './api/corpus-chunks';
-import { handleWikiVersionsRequest } from './api/wiki-versions';
 import { handleWorkerTokensRequest } from './api/worker-tokens';
 import { handleInternalWikiVersionsRequest } from './api/internal-wiki-versions';
 
