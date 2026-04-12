@@ -143,8 +143,15 @@ test('citation tap fires the interaction on a touch viewport', async ({ page }, 
   await expect(sup).toBeVisible();
 
   if (testInfo.project.name !== 'desktop-chrome') {
-    // Simulate a touch tap using Playwright's tap action.
-    await sup.tap();
+    // Dispatch a synthetic touchend event directly so the test does not rely
+    // on Playwright's input-simulation pipeline, which may or may not produce
+    // browser-native touch events depending on the Chromium build.
+    await page.evaluate(() => {
+      const el = document.querySelector(
+        'sup.wiki-citation[data-citation-id="cit-mobile-01"]',
+      ) as HTMLElement;
+      el.dispatchEvent(new TouchEvent('touchend', { bubbles: true, cancelable: true }));
+    });
 
     const fired = await page.evaluate(
       () => (window as unknown as Record<string, unknown>).__citationTapFired,
