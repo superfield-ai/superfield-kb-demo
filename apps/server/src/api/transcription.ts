@@ -64,8 +64,6 @@ export async function handleTranscriptionRequest(
   //   - Delegated-token (Bearer) auth from the cluster-internal transcription worker
   //   - Session-cookie auth from the edge path or test clients
   if (req.method === 'POST' && url.pathname === '/api/transcriptions') {
-    let actorId: string;
-
     const authHeader = req.headers.get('Authorization') ?? '';
     const bearerMatch = authHeader.match(/^Bearer (.+)$/);
 
@@ -114,8 +112,6 @@ export async function handleTranscriptionRequest(
         return json({ error: message }, 401);
       }
 
-      actorId = task.created_by;
-
       const effectivePath: 'edge' | 'cluster-worker' =
         worker_path === 'edge' || worker_path === 'cluster-worker'
           ? (worker_path as 'edge' | 'cluster-worker')
@@ -148,7 +144,7 @@ export async function handleTranscriptionRequest(
     // Edge/session path: session-cookie auth
     const user = await getAuthenticatedUser(req);
     if (!user) return json({ error: 'Unauthorized' }, 401);
-    actorId = user.id;
+    // actorId (user.id) is available here for future audit log integration
 
     let body: Record<string, unknown>;
     try {
@@ -163,8 +159,6 @@ export async function handleTranscriptionRequest(
       return json({ error: 'recording_ref is required' }, 400);
     if (!transcript || typeof transcript !== 'string')
       return json({ error: 'transcript is required' }, 400);
-
-    void actorId; // used for audit log in future
 
     const effectivePath: 'edge' | 'cluster-worker' =
       worker_path === 'edge' || worker_path === 'cluster-worker'
