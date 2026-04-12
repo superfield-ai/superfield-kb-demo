@@ -168,7 +168,7 @@ export async function handleTestSessionRequest(
 
     await sql`
       INSERT INTO entities (id, type, properties, tenant_id)
-      VALUES (${userId}, 'user', ${sql.json(properties)}, null)
+      VALUES (${userId}, 'user', ${sql.json(properties as never)}, null)
       ON CONFLICT DO NOTHING
     `;
 
