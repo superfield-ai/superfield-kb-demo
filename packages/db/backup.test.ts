@@ -137,8 +137,8 @@ beforeAll(async () => {
   await sourceAdminSql`
     INSERT INTO entities (id, type, properties, tenant_id)
     VALUES
-      (${ENTITY_A_ID}, 'user', ${{ name: 'Alice' }}::jsonb, ${TENANT_A}),
-      (${ENTITY_B_ID}, 'user', ${{ name: 'Bob' }}::jsonb, ${TENANT_B})
+      (${ENTITY_A_ID}, 'user', ${JSON.stringify({ name: 'Alice' })}::jsonb, ${TENANT_A}),
+      (${ENTITY_B_ID}, 'user', ${JSON.stringify({ name: 'Bob' })}::jsonb, ${TENANT_B})
   `;
 
   // Create the backup store directory.

@@ -318,7 +318,11 @@ export async function backupDatabase(
     const cipherBuf = await crypto.subtle.encrypt(
       { name: 'AES-GCM', iv: ivArr },
       cryptoKey,
-      plainBytes,
+      // Ensure we pass a plain ArrayBuffer (not SharedArrayBuffer-backed Buffer).
+      plainBytes.buffer.slice(
+        plainBytes.byteOffset,
+        plainBytes.byteOffset + plainBytes.byteLength,
+      ) as ArrayBuffer,
     );
 
     artifactBytes = Buffer.from(cipherBuf);
@@ -381,18 +385,34 @@ export async function restoreDatabase(
 
     const ivArr = base64ToBuffer(meta.iv);
 
+    // Ensure we pass plain ArrayBuffers (not SharedArrayBuffer-backed Uint8Arrays).
+    const plaintextKeyBuf = plaintextKey.buffer.slice(
+      plaintextKey.byteOffset,
+      plaintextKey.byteOffset + plaintextKey.byteLength,
+    ) as ArrayBuffer;
+
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
-      plaintextKey.buffer as ArrayBuffer,
+      plaintextKeyBuf,
       { name: 'AES-GCM', length: 256 },
       false,
       ['decrypt'],
     );
 
+    const ivBuf = ivArr.buffer.slice(
+      ivArr.byteOffset,
+      ivArr.byteOffset + ivArr.byteLength,
+    ) as ArrayBuffer;
+
+    const encBytesBuf = encBytes.buffer.slice(
+      encBytes.byteOffset,
+      encBytes.byteOffset + encBytes.byteLength,
+    ) as ArrayBuffer;
+
     const plainBuf = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: ivArr },
+      { name: 'AES-GCM', iv: ivBuf },
       cryptoKey,
-      encBytes,
+      encBytesBuf,
     );
 
     clearDumpPath = join(tmpdir(), `${meta.backupId}.dump`);
