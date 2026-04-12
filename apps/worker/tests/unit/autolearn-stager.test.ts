@@ -349,42 +349,43 @@ describe('stageAutolearnInput — success', () => {
   });
 
   test('forwards the Authorization header to the API', async () => {
-    let receivedAuthHeader: string | undefined;
+    let capturedAuth: string | null = null;
 
-    const { server: authServer, baseUrl: authBaseUrl } = await startTestServer((req, res) => {
-      receivedAuthHeader = req.headers['authorization'] as string | undefined;
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(GROUND_TRUTH_BODY);
+    const { server: authCapServer, baseUrl: authCapBaseUrl } = await startTestServer((req, res) => {
+      capturedAuth = req.headers['authorization'] ?? null;
+      const url = new URL(req.url ?? '/', 'http://127.0.0.1');
+      if (url.pathname === '/api/autolearn/ground-truth') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(GROUND_TRUTH_BODY);
+        return;
+      }
+      if (url.pathname === '/api/autolearn/wiki') {
+        res.writeHead(200, { 'Content-Type': 'text/markdown' });
+        res.end(WIKI_BODY);
+        return;
+      }
+      res.writeHead(404);
+      res.end();
     });
 
-    // Second server for wiki
-    const { server: wikiServer, baseUrl: wikiBaseUrl } = await startTestServer((req, res) => {
-      res.writeHead(200, { 'Content-Type': 'text/markdown' });
-      res.end(WIKI_BODY);
-    });
-
-    // We need a single base URL, so use the main test server which already
-    // records the auth header for ground-truth; the wiki request goes to the
-    // same server.
-    authServer.close();
-    wikiServer.close();
-
-    // Use the shared server above which handles both routes.
-    const result = await stageAutolearnInput({
-      apiBaseUrl: baseUrl,
-      scope: { dept: 'eng', customer: 'acme' },
-      delegatedToken: 'bearer-token-xyz',
-    });
-    await cleanupStagingDir(result.stagingDir);
-    // The main test server above serves both routes — any header sent to it
-    // is not captured here; this test uses a dedicated one-shot server below.
+    try {
+      const result = await stageAutolearnInput({
+        apiBaseUrl: authCapBaseUrl,
+        scope: { dept: 'eng', customer: 'acme' },
+        delegatedToken: 'bearer-token-xyz',
+      });
+      await cleanupStagingDir(result.stagingDir);
+      expect(capturedAuth).toBe('Bearer bearer-token-xyz');
+    } finally {
+      authCapServer.close();
+    }
   });
 
   test('passes scope query params to the ground-truth endpoint', async () => {
-    let capturedUrl: string | undefined;
+    const receivedUrls: string[] = [];
 
     const { server: captureServer, baseUrl: captureBaseUrl } = await startTestServer((req, res) => {
-      capturedUrl = req.url ?? '';
+      receivedUrls.push(req.url ?? '');
       if ((req.url ?? '').includes('/api/autolearn/ground-truth')) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(GROUND_TRUTH_BODY);
@@ -406,12 +407,7 @@ describe('stageAutolearnInput — success', () => {
         delegatedToken: 'tok',
       });
       await cleanupStagingDir(result.stagingDir);
-      // capturedUrl may be the wiki URL (last request) or ground-truth;
-      // both must include the scope params — verify via the URL builder.
-      const gtUrl = buildGroundTruthUrl(captureBaseUrl, {
-        dept: 'finance',
-        customer: 'beta-corp',
-      });
+      const gtUrl = receivedUrls.find((u) => u.includes('/api/autolearn/ground-truth')) ?? '';
       expect(gtUrl).toContain('dept=finance');
       expect(gtUrl).toContain('customer=beta-corp');
     } finally {
