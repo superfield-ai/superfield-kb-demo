@@ -212,7 +212,9 @@ export async function callSummaryApi(chunks: AnonymisedChunk[]): Promise<Campaig
   try {
     parsed = JSON.parse(jsonText);
   } catch (err) {
-    throw new Error(`Claude API response is not valid JSON: ${String(err)}\n\nRaw: ${text}`);
+    throw new Error(`Claude API response is not valid JSON: ${String(err)}\n\nRaw: ${text}`, {
+      cause: err,
+    });
   }
 
   if (!isValidSummary(parsed)) {
