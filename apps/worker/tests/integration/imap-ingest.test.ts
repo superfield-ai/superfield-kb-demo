@@ -241,7 +241,7 @@ describe('executeEmailIngestTask — permanent failure isolation', () => {
     const badPayload = buildEmailIngestPayload('bad-mailbox');
     // Transient errors are thrown (not returned), so we catch and move on.
     await expect(
-      executeEmailIngestTask(badPayload as Record<string, unknown>, badEnv),
+      executeEmailIngestTask(badPayload as unknown as Record<string, unknown>, badEnv),
     ).rejects.toThrow();
 
     // Good task must still succeed after the transient failure above.
@@ -258,7 +258,7 @@ describe('executeEmailIngestTask — permanent failure isolation', () => {
 
     const goodPayload = buildEmailIngestPayload('good-mailbox');
     const goodResult = await executeEmailIngestTask(
-      goodPayload as Record<string, unknown>,
+      goodPayload as unknown as Record<string, unknown>,
       goodEnv,
     );
     expect(goodResult.status).toBe('completed');
