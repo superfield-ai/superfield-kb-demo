@@ -528,7 +528,7 @@ export function AnnotationSidebar({
         </p>
       )}
 
-      {openThreads.map((thread, idx) => (
+      {openThreads.map((thread) => (
         <div key={thread.id}>
           {anchors[threads.indexOf(thread)] === null && (
             <p className="text-[11px] text-amber-600 px-1 pb-1">
