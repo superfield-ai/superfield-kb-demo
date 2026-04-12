@@ -101,7 +101,7 @@ describe('OllamaEmbeddingBackend', () => {
 
   const server = setupServer(
     http.post(`${ollamaBaseUrl}/api/embed`, () =>
-      HttpResponse.json(ollamaFixture.response.body, {
+      HttpResponse.json(ollamaFixture.response.body as Record<string, unknown>, {
         status: ollamaFixture.response.status,
       }),
     ),
@@ -148,7 +148,7 @@ describe('CandleEmbeddingBackend', () => {
 
   const server = setupServer(
     http.post(`${candleBaseUrl}/api/embed`, () =>
-      HttpResponse.json(candleFixture.response.body, {
+      HttpResponse.json(candleFixture.response.body as Record<string, unknown>, {
         status: candleFixture.response.status,
       }),
     ),
