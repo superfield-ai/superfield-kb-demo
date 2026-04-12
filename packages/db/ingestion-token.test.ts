@@ -19,7 +19,7 @@ import postgres from 'postgres';
 import { startPostgres, type PgContainer } from './pg-container';
 import { runInitRemote, dbUrl } from './init-remote';
 import { migrate } from './index';
-import { mintIngestionToken, verifyIngestionToken } from './ingestion-token';
+import { mintIngestionToken } from './ingestion-token';
 
 let pg: PgContainer;
 
