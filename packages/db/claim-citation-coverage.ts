@@ -327,7 +327,7 @@ export async function checkAndMarkDraft(
   await sql`
     UPDATE entities
     SET
-      properties = properties || ${sql.json(patch)},
+      properties = properties || ${sql.json(patch as never)},
       updated_at = NOW()
     WHERE id = ${versionId}
   `;
