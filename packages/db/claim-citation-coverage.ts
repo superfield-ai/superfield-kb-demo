@@ -157,7 +157,7 @@ function extractSentences(stripped: string): string[] {
   // Join prose lines and split into sentences
   const text = prose.join(' ');
   // Split on . ! ? followed by space or end-of-string, keeping the delimiter
-  const raw = text.split(/(?<=[.!?])\s+(?=[A-Z\[\(])|\s*\n\s*/);
+  const raw = text.split(/(?<=[.!?])\s+(?=[A-Z[(])|\s*\n\s*/);
   return raw.map((s) => s.trim()).filter((s) => s.length > 0);
 }
 
