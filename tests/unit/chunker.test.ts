@@ -96,7 +96,7 @@ describe('chunkText — max-tokens ceiling', () => {
     const text = 'Alpha beta gamma. Delta epsilon. Zeta eta theta iota.';
     const totalSource = countTokens(text);
     const chunks = chunkText(text, { maxTokens: 4 });
-    const totalChunked = chunks.reduce((sum, c) => sum + c.tokenCount, 0);
+    const totalChunked = chunks.reduce((sum: number, c) => sum + c.tokenCount, 0);
     expect(totalChunked).toBe(totalSource);
   });
 
@@ -110,7 +110,7 @@ describe('chunkText — max-tokens ceiling', () => {
       expect(chunk.tokenCount).toBeLessThanOrEqual(8);
     }
     // All words should be accounted for (word30 ends with '.' so we lose nothing)
-    const totalTokens = chunks.reduce((sum, c) => sum + c.tokenCount, 0);
+    const totalTokens = chunks.reduce((sum: number, c) => sum + c.tokenCount, 0);
     // The period is attached to the last word, so total == words.length
     expect(totalTokens).toBe(words.length);
   });
