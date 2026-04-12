@@ -597,7 +597,7 @@ describe('coverage probe — LEGAL_TRANSITIONS completeness', () => {
     );
     // WORKER_STARTED is the only state that is not the target of any transition;
     // all others must be reachable.
-    const notEntry = [AutolearnState.WORKER_STARTED];
+    const notEntry: AutolearnState[] = [AutolearnState.WORKER_STARTED];
 
     for (const state of allStates) {
       if (notEntry.includes(state)) continue;
