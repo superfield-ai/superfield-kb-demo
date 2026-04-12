@@ -14,7 +14,7 @@
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import postgres from 'postgres';
 import { startPostgres, type PgContainer } from './pg-container';
-import { runInitRemote, dbUrl } from './init-remote';
+import { runInitRemote } from './init-remote';
 import { migrate } from './index';
 import {
   AnnotationState,
