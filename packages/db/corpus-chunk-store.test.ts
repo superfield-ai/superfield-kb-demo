@@ -25,7 +25,7 @@
 
 import { beforeAll, afterAll, describe, test, expect } from 'vitest';
 import postgres from 'postgres';
-import { cleanupStaleContainers, addProcess, removeProcess } from './cleanup';
+import { startPgvectorPostgres, type PgContainer } from './pg-container';
 import { runInitRemote, dbUrl } from './init-remote';
 import { migrate } from './index';
 import {
@@ -37,106 +37,6 @@ import {
   loadHnswIndexConfig,
   loadHnswQueryConfig,
 } from './corpus-chunk-store';
-
-// ---------------------------------------------------------------------------
-// pgvector container helper
-// ---------------------------------------------------------------------------
-
-const PG_USER = 'calypso';
-const PG_PASSWORD = 'calypso';
-const PG_DB = 'calypso';
-// pgvector/pgvector:pg16 ships with the vector extension pre-installed.
-const PG_IMAGE = 'pgvector/pgvector:pg16';
-const READY_TIMEOUT_MS = 60_000;
-const PORT_POLL_INTERVAL_MS = 250;
-
-interface PgContainer {
-  url: string;
-  containerId: string;
-  stop: () => Promise<void>;
-}
-
-async function startPgvectorPostgres(): Promise<PgContainer> {
-  cleanupStaleContainers();
-  const runResult = Bun.spawnSync([
-    'docker',
-    'run',
-    '-d',
-    '--rm',
-    '-e',
-    `POSTGRES_USER=${PG_USER}`,
-    '-e',
-    `POSTGRES_PASSWORD=${PG_PASSWORD}`,
-    '-e',
-    `POSTGRES_DB=${PG_DB}`,
-    '-p',
-    '0:5432',
-    PG_IMAGE,
-  ]);
-
-  if (runResult.exitCode !== 0) {
-    throw new Error(
-      `Failed to start pgvector container: ${new TextDecoder().decode(runResult.stderr)}`,
-    );
-  }
-
-  const containerId = new TextDecoder().decode(runResult.stdout).trim();
-  addProcess(containerId, 'pgvector');
-
-  let port: number;
-  try {
-    port = await getContainerPortWithRetry(containerId);
-    await waitForPostgres(port);
-  } catch (err) {
-    removeProcess(containerId);
-    Bun.spawnSync(['docker', 'stop', containerId]);
-    throw err;
-  }
-
-  const url = `postgres://${PG_USER}:${PG_PASSWORD}@localhost:${port}/${PG_DB}`;
-
-  return {
-    url,
-    containerId,
-    stop: async () => {
-      removeProcess(containerId);
-      Bun.spawnSync(['docker', 'stop', containerId]);
-    },
-  };
-}
-
-async function getContainerPortWithRetry(containerId: string): Promise<number> {
-  const deadline = Date.now() + READY_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    const result = Bun.spawnSync(['docker', 'port', containerId, '5432']);
-    const output = new TextDecoder().decode(result.stdout).trim();
-    try {
-      const firstLine = output.split('\n')[0].trim();
-      const port = parseInt(firstLine.split(':').at(-1) ?? '', 10);
-      if (Number.isFinite(port)) return port;
-    } catch {
-      // retry
-    }
-    await Bun.sleep(PORT_POLL_INTERVAL_MS);
-  }
-  throw new Error(`Timed out waiting for docker to publish port for container ${containerId}`);
-}
-
-async function waitForPostgres(port: number): Promise<void> {
-  const deadline = Date.now() + READY_TIMEOUT_MS;
-  const url = `postgres://${PG_USER}:${PG_PASSWORD}@localhost:${port}/${PG_DB}`;
-  while (Date.now() < deadline) {
-    try {
-      const testSql = postgres(url, { connect_timeout: 2 });
-      await testSql`SELECT 1`;
-      await testSql.end();
-      return;
-    } catch {
-      await Bun.sleep(300);
-    }
-  }
-  throw new Error(`pgvector container did not become ready within ${READY_TIMEOUT_MS}ms`);
-}
 
 // ---------------------------------------------------------------------------
 // Test setup
