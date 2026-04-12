@@ -93,7 +93,7 @@ export function withRlsContext<T>(
   callback: (tx: TxSql) => Promise<T>,
 ): Promise<T> {
   const { userId, tenantId, rmCustomerIds, bdmDepartmentId } = context;
-  return sqlPool.begin((tx) => {
+  return sqlPool.begin(async (tx) => {
     const userIdEsc = escapeConfigValue(userId);
     const tenantIdEsc = tenantId !== null ? escapeConfigValue(tenantId) : '';
     // Pipe-delimited customer IDs for wiki_page_versions_rm_isolation policy.
@@ -102,17 +102,16 @@ export function withRlsContext<T>(
       rmCustomerIds && rmCustomerIds.length > 0
         ? rmCustomerIds.map(escapeConfigValue).join('|')
         : '';
-    return tx
-      .unsafe(`SET LOCAL app.current_user_id = '${userIdEsc}'`)
-      .then(() => tx.unsafe(`SET LOCAL app.current_tenant_id = '${tenantIdEsc}'`))
-      .then(() => tx.unsafe(`SET LOCAL app.current_rm_customer_ids = '${customerIdsEsc}'`))
-      .then(() =>
-        bdmDepartmentId !== undefined
-          ? tx.unsafe(
-              `SET LOCAL app.current_bdm_department_id = '${escapeConfigValue(bdmDepartmentId)}'`,
-            )
-          : tx,
-      )
-      .then(() => callback(tx as unknown as Sql));
+    await tx.unsafe(`SET LOCAL app.current_user_id = '${userIdEsc}'`);
+    await tx.unsafe(`SET LOCAL app.current_tenant_id = '${tenantIdEsc}'`);
+    await tx.unsafe(`SET LOCAL app.current_rm_customer_ids = '${customerIdsEsc}'`);
+
+    if (bdmDepartmentId !== undefined) {
+      await tx.unsafe(
+        `SET LOCAL app.current_bdm_department_id = '${escapeConfigValue(bdmDepartmentId)}'`,
+      );
+    }
+
+    return callback(tx as unknown as Sql);
   }) as unknown as Promise<T>;
 }
