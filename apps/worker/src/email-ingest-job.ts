@@ -63,7 +63,7 @@
  * Blueprint refs: WORKER domain, TQ-D-001, TQ-P-002, PRD §6.
  */
 
-import { fetchNewMessages, classifyImapError } from 'core/imap-etl-worker';
+import { fetchNewMessages } from 'core/imap-etl-worker';
 import type { ImapConnectionConfig, LandedMessage } from 'core/imap-etl-worker';
 
 /** The job_type string for the EMAIL_INGEST task type. */
