@@ -37,7 +37,7 @@
  */
 
 import { ImapFlow, type FetchMessageObject, type MailboxLockObject } from 'imapflow';
-import { simpleParser, type ParsedMail } from 'mailparser';
+import { simpleParser, type AddressObject, type EmailAddress, type ParsedMail } from 'mailparser';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -266,12 +266,12 @@ async function classifyMessage(uid: number, rawBytes: Buffer): Promise<LandedMes
   const toAddress = parsed.to
     ? Array.isArray(parsed.to)
       ? parsed.to
-          .flatMap((addrObj) => addrObj.value ?? [])
-          .map((a) => a.address ?? '')
+          .flatMap((addrObj: AddressObject) => addrObj.value ?? [])
+          .map((a: EmailAddress) => a.address ?? '')
           .filter(Boolean)
           .join(', ')
       : (parsed.to.value ?? [])
-          .map((a) => a.address ?? '')
+          .map((a: EmailAddress) => a.address ?? '')
           .filter(Boolean)
           .join(', ')
     : null;
