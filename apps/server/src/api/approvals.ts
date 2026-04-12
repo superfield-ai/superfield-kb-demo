@@ -72,7 +72,7 @@ function isDesignatedApprover(userId: string): boolean {
  * Builds an ApprovalAuditWriterFn backed by the server-layer audit service.
  * Bridges the injected-callback pattern in db/approvals with emitAuditEvent.
  */
-function makeAuditWriter(appState: AppState) {
+function makeAuditWriter(_appState: AppState) {
   return async (event: {
     actor_id: string;
     action: string;
