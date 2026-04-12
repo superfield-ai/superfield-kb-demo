@@ -51,6 +51,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import type { SpeechRecognitionLike } from '../lib/transcription.js';
 
 // ---------------------------------------------------------------------------
 // Types

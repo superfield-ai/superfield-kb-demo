@@ -61,7 +61,7 @@ declare global {
   }
 }
 
-interface SpeechRecognitionLike extends EventTarget {
+export interface SpeechRecognitionLike extends EventTarget {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
