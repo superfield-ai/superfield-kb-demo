@@ -99,8 +99,8 @@ afterAll(async () => {
 async function withComplianceRole<T>(callback: (tx: Sql) => Promise<T>): Promise<T> {
   return appRwSql.begin(async (tx) => {
     await tx.unsafe('SET LOCAL ROLE compliance_officer');
-    return callback(tx as Sql);
-  });
+    return callback(tx as unknown as Sql);
+  }) as unknown as Promise<T>;
 }
 
 describe('compliance_officer database privileges', () => {
