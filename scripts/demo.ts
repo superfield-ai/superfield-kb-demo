@@ -190,13 +190,6 @@ export function buildDemoSecretManifests(_config: DemoConfig): string {
   ].join('\n---\n');
 }
 
-function decodeOutput(output: ArrayBufferView | ArrayBuffer | null | undefined): string {
-  if (!output) return '';
-  return new TextDecoder()
-    .decode(output instanceof ArrayBuffer ? new Uint8Array(output) : output)
-    .trim();
-}
-
 function summarizeFailure(stderr: string): string {
   return stderr
     .split('\n')
@@ -409,6 +402,7 @@ async function refreshOnce(config: DemoConfig): Promise<string> {
         `http://127.0.0.1:${config.port}/health/live`,
         error,
       ),
+      { cause: error },
     );
   }
   return imageRef;
@@ -524,6 +518,7 @@ async function main(): Promise<void> {
           `http://127.0.0.1:${config.port}/health/live`,
           error,
         ),
+        { cause: error },
       );
     }
     console.log(`[demo] Demo URL: http://127.0.0.1:${config.port}/health/live`);
