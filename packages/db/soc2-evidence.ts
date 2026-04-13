@@ -29,7 +29,7 @@ export interface Soc2EvidenceArtifactRow {
   artifact_type: Soc2EvidenceArtifactType;
   source: string;
   captured_at: Date;
-  payload: Record<string, unknown>;
+  payload: unknown;
 }
 
 export interface Soc2EvidenceBundleMeta {
@@ -155,7 +155,7 @@ async function storeArtifact(
   sql: SqlClient,
   artifactType: Soc2EvidenceArtifactType,
   source: string,
-  payload: Record<string, unknown>,
+  payload: unknown,
 ): Promise<Soc2EvidenceArtifactRow> {
   const rows = await sql<Soc2EvidenceArtifactRow[]>`
     INSERT INTO soc2_evidence_snapshots (artifact_type, source, payload)
@@ -312,24 +312,9 @@ export async function captureSoc2EvidenceSnapshot(
   const incidentRunbook = readIncidentRunbookArtifact(repoRoot);
 
   await Promise.all([
-    storeArtifact(
-      sql,
-      'access_review',
-      'quarterly-access-review',
-      accessReview as Record<string, unknown>,
-    ),
-    storeArtifact(
-      sql,
-      'change_log',
-      'git-and-deployment-change-log',
-      changeLog as Record<string, unknown>,
-    ),
-    storeArtifact(
-      sql,
-      'incident_runbook',
-      'auth-incident-response-runbook',
-      incidentRunbook as Record<string, unknown>,
-    ),
+    storeArtifact(sql, 'access_review', 'quarterly-access-review', accessReview),
+    storeArtifact(sql, 'change_log', 'git-and-deployment-change-log', changeLog),
+    storeArtifact(sql, 'incident_runbook', 'auth-incident-response-runbook', incidentRunbook),
   ]);
 
   return buildSoc2EvidenceBundle(sql, options);
@@ -353,7 +338,7 @@ export async function recordSoc2BackupVerification(
   };
 
   const row = await storeArtifact(sql, 'backup_verification', 'backup-restore-drill', payload);
-  return artifactRowToJson(row) as Soc2BackupVerificationArtifact;
+  return artifactRowToJson(row) as unknown as Soc2BackupVerificationArtifact;
 }
 
 async function loadLatestArtifact(
@@ -379,7 +364,7 @@ async function loadBackupVerificationArtifacts(
     WHERE artifact_type = 'backup_verification'
     ORDER BY captured_at DESC, id DESC
   `;
-  return rows.map((row) => artifactRowToJson(row) as Soc2BackupVerificationArtifact);
+  return rows.map((row) => artifactRowToJson(row) as unknown as Soc2BackupVerificationArtifact);
 }
 
 export async function buildSoc2EvidenceBundle(
@@ -398,17 +383,17 @@ export async function buildSoc2EvidenceBundle(
 
   const accessReview =
     accessReviewRow !== null
-      ? (artifactRowToJson(accessReviewRow) as Soc2AccessReviewArtifact)
+      ? (artifactRowToJson(accessReviewRow) as unknown as Soc2AccessReviewArtifact)
       : await generateAccessReviewArtifact(sql, options.actorId);
 
   const changeLog =
     changeLogRow !== null
-      ? (artifactRowToJson(changeLogRow) as Soc2ChangeLogArtifact)
+      ? (artifactRowToJson(changeLogRow) as unknown as Soc2ChangeLogArtifact)
       : await generateChangeLogArtifact(options);
 
   const incidentRunbook =
     incidentRunbookRow !== null
-      ? (artifactRowToJson(incidentRunbookRow) as Soc2IncidentRunbookArtifact)
+      ? (artifactRowToJson(incidentRunbookRow) as unknown as Soc2IncidentRunbookArtifact)
       : readIncidentRunbookArtifact(repoRoot);
 
   return {
