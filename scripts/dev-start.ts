@@ -24,7 +24,7 @@ import { createProxy } from '../apps/web/vite.config';
 
 // Dev cluster Postgres URL (k3d loadbalancer exposes port 5432 on localhost)
 const DEV_DATABASE_URL =
-  process.env.DATABASE_URL ?? 'postgres://calypso:calypso@localhost:5432/calypso';
+  process.env.DATABASE_URL ?? 'postgres://superfield:superfield@localhost:5432/superfield';
 
 const REPO_ROOT = join(import.meta.dir, '..');
 const WEB_PORT_BASE = Number(process.env.PORT ?? 5174);

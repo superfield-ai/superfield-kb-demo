@@ -11,11 +11,12 @@
  *
  * Each `bun run demo` invocation creates a uniquely-named k3d cluster with
  * randomised host ports so multiple demos can run concurrently on one host
- * without port collisions.  Set CALYPSO_DEMO_CLUSTER to reuse a specific
+ * without port collisions.  Set SUPERFIELD_DEMO_CLUSTER to reuse a specific
  * existing cluster by name.
  */
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createConnection } from 'node:net';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -46,10 +47,10 @@ interface RunOptions {
   phase: string;
 }
 
-const CLUSTER_PREFIX = 'calypso-demo';
+const CLUSTER_PREFIX = 'superfield-demo';
 const NAMESPACE = 'default';
-const IMAGE_REPO = 'calypso-demo-app';
-const DB_HOST = 'calypso-dev-postgres';
+const IMAGE_REPO = 'superfield-demo-app';
+const DB_HOST = 'superfield-dev-postgres';
 const MODULE_DIR =
   typeof import.meta.dir === 'string'
     ? import.meta.dir
@@ -63,7 +64,7 @@ const DEMO_DB_PASSWORDS = {
   audit: 'audit_w_password',
   dictionary: 'dict_rw_password',
   jwtSecret: 'demo-jwt-secret',
-  superuserEmail: 'demo-admin@calypso.local',
+  superuserEmail: 'demo-admin@superfield.local',
   superuserPassword: 'demo-admin-password',
 } as const;
 
@@ -102,16 +103,19 @@ export function demoConfig(
     clusterName?: string;
   } = {},
 ): DemoConfig {
-  const clusterName = input.clusterName ?? process.env.CALYPSO_DEMO_CLUSTER ?? randomClusterName();
+  const clusterName =
+    input.clusterName ?? process.env.SUPERFIELD_DEMO_CLUSTER ?? randomClusterName();
 
   // dbPort is randomised so concurrent demos don't collide on the k3d
   // loadbalancer host binding.  port (the kubectl port-forward endpoint) is
   // kept at a stable default so reverse-tunnel setups can target a known port;
-  // override via CALYPSO_DEMO_PORT when needed.
+  // override via SUPERFIELD_DEMO_PORT when needed.
   const dbPort =
     input.dbPort ??
-    (process.env.CALYPSO_DEMO_DB_PORT ? Number(process.env.CALYPSO_DEMO_DB_PORT) : randomPort());
-  const port = input.port ?? Number(process.env.CALYPSO_DEMO_PORT ?? 58080);
+    (process.env.SUPERFIELD_DEMO_DB_PORT
+      ? Number(process.env.SUPERFIELD_DEMO_DB_PORT)
+      : randomPort());
+  const port = input.port ?? Number(process.env.SUPERFIELD_DEMO_PORT ?? 58080);
 
   return {
     clusterName,
@@ -146,8 +150,8 @@ export function buildDemoPlan(config: DemoConfig): DemoPlanStep[] {
       commands: [
         'kubectl apply -f k8s/dev/dev-secrets.yaml',
         'kubectl apply -f k8s/dev/postgres.yaml',
-        'kubectl rollout status statefulset/calypso-dev-postgres --timeout=120s',
-        `ADMIN_DATABASE_URL=postgres://calypso:calypso@localhost:${config.dbPort}/postgres bun run packages/db/init-remote.ts`,
+        'kubectl rollout status statefulset/superfield-dev-postgres --timeout=120s',
+        `ADMIN_DATABASE_URL=postgres://superfield:superfield@localhost:${config.dbPort}/postgres bun run packages/db/init-remote.ts`,
       ],
     },
     {
@@ -165,7 +169,7 @@ export function buildDemoPlan(config: DemoConfig): DemoPlanStep[] {
     {
       name: 'rollout',
       commands: [
-        'kubectl rollout status deployment/calypso-app --timeout=180s',
+        'kubectl rollout status deployment/superfield-app --timeout=180s',
         `curl -sf http://127.0.0.1:${config.port}/health/live`,
       ],
     },
@@ -198,9 +202,9 @@ function renderSecretDocument(name: string, data: Record<string, string>): strin
 
 export function buildDemoSecretManifests(_config: DemoConfig): string {
   const dbUrls = {
-    ANALYTICS_DATABASE_URL: `postgres://analytics_w:${DEMO_DB_PASSWORDS.analytics}@${DB_HOST}:5432/calypso_analytics`,
-    AUDIT_DATABASE_URL: `postgres://audit_w:${DEMO_DB_PASSWORDS.audit}@${DB_HOST}:5432/calypso_audit`,
-    DATABASE_URL: `postgres://app_rw:${DEMO_DB_PASSWORDS.app}@${DB_HOST}:5432/calypso_app`,
+    ANALYTICS_DATABASE_URL: `postgres://analytics_w:${DEMO_DB_PASSWORDS.analytics}@${DB_HOST}:5432/superfield_analytics`,
+    AUDIT_DATABASE_URL: `postgres://audit_w:${DEMO_DB_PASSWORDS.audit}@${DB_HOST}:5432/superfield_audit`,
+    DATABASE_URL: `postgres://app_rw:${DEMO_DB_PASSWORDS.app}@${DB_HOST}:5432/superfield_app`,
   };
 
   const appSecrets = {
@@ -224,8 +228,8 @@ export function buildDemoSecretManifests(_config: DemoConfig): string {
   };
 
   return [
-    renderSecretDocument('calypso-secrets', appSecrets),
-    renderSecretDocument('calypso-api-secrets', apiSecrets),
+    renderSecretDocument('superfield-secrets', appSecrets),
+    renderSecretDocument('superfield-api-secrets', apiSecrets),
   ].join('\n---\n');
 }
 
@@ -359,7 +363,7 @@ async function applyTempManifest(
   contents: string,
   kubeconfigPath: string,
 ): Promise<void> {
-  const dir = mkdtempSync(join(tmpdir(), 'calypso-demo-'));
+  const dir = mkdtempSync(join(tmpdir(), 'superfield-demo-'));
   const filePath = join(dir, filename);
   try {
     writeFileSync(filePath, contents, 'utf-8');
@@ -375,24 +379,52 @@ async function applyTempManifest(
 
 function renderDemoAppManifest(imageRef: string): string {
   const appYaml = readFileSync(join(REPO_ROOT, 'k8s', 'app.yaml'), 'utf-8');
-  return appYaml.replace('ghcr.io/<owner>/calypso-starter-ts:latest', imageRef);
+  return appYaml.replace('ghcr.io/<owner>/superfield-starter-ts:latest', imageRef);
 }
 
 async function bootstrapDatabase(config: DemoConfig): Promise<void> {
   const env = {
-    ADMIN_DATABASE_URL: `postgres://calypso:calypso@localhost:${config.dbPort}/postgres`,
+    ADMIN_DATABASE_URL: `postgres://superfield:superfield@localhost:${config.dbPort}/postgres`,
     AGENT_EMAIL_INGEST_PASSWORD: DEMO_DB_PASSWORDS.agentEmailIngest,
     ANALYTICS_W_PASSWORD: DEMO_DB_PASSWORDS.analytics,
     APP_RW_PASSWORD: DEMO_DB_PASSWORDS.app,
     AUDIT_W_PASSWORD: DEMO_DB_PASSWORDS.audit,
     DICT_RW_PASSWORD: DEMO_DB_PASSWORDS.dictionary,
   };
-  await run(['bun', 'run', 'packages/db/init-remote.ts'], {
-    cwd: REPO_ROOT,
-    env,
-    kubeconfigPath: config.kubeconfigPath,
-    phase: 'database bootstrap',
-  });
+
+  // The postgres service is ClusterIP — it is not reachable via the k3d
+  // loadbalancer port mapping.  Use kubectl port-forward to expose it locally
+  // for the duration of the bootstrap run.
+  console.log(
+    `[demo] Starting port-forward: svc/superfield-dev-postgres → localhost:${config.dbPort}`,
+  );
+  const portForward = Bun.spawn(
+    ['kubectl', 'port-forward', 'svc/superfield-dev-postgres', `${config.dbPort}:5432`],
+    {
+      cwd: REPO_ROOT,
+      env: { ...process.env, KUBECONFIG: config.kubeconfigPath },
+      stdout: 'pipe',
+      stderr: 'inherit',
+    },
+  );
+  try {
+    console.log(`[demo] Waiting for postgres to accept connections on localhost:${config.dbPort}…`);
+    await waitForTcpPort('127.0.0.1', config.dbPort);
+    console.log(`[demo] Postgres port-forward ready. Running init-remote.`);
+    await run(['bun', 'run', 'packages/db/init-remote.ts'], {
+      cwd: REPO_ROOT,
+      env,
+      kubeconfigPath: config.kubeconfigPath,
+      phase: 'database bootstrap',
+    });
+  } finally {
+    console.log(`[demo] Stopping port-forward for svc/superfield-dev-postgres.`);
+    try {
+      portForward.kill();
+    } catch {
+      // best effort
+    }
+  }
 }
 
 async function buildDemoImage(config: DemoConfig): Promise<string> {
@@ -416,10 +448,32 @@ async function deployDemoImage(config: DemoConfig, imageRef: string): Promise<vo
     [buildDemoSecretManifests(config), renderDemoAppManifest(imageRef)].join('\n---\n'),
     config.kubeconfigPath,
   );
-  await run(['kubectl', 'rollout', 'status', 'deployment/calypso-app', '--timeout=180s'], {
+  await run(['kubectl', 'rollout', 'status', 'deployment/superfield-app', '--timeout=180s'], {
     cwd: REPO_ROOT,
     kubeconfigPath: config.kubeconfigPath,
     phase: 'deploy',
+  });
+}
+
+function waitForTcpPort(host: string, port: number, timeoutMs = 30_000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const deadline = Date.now() + timeoutMs;
+    const attempt = () => {
+      const socket = createConnection({ host, port });
+      socket.once('connect', () => {
+        socket.destroy();
+        resolve();
+      });
+      socket.once('error', () => {
+        socket.destroy();
+        if (Date.now() >= deadline) {
+          reject(new Error(`Timed out waiting for ${host}:${port}`));
+          return;
+        }
+        setTimeout(attempt, 500);
+      });
+    };
+    attempt();
   });
 }
 
@@ -445,7 +499,7 @@ async function waitForHealth(url: string, timeoutMs = 120_000): Promise<void> {
 
 function startPortForward(config: DemoConfig) {
   const child = Bun.spawn(
-    ['kubectl', 'port-forward', 'deployment/calypso-app', `${config.port}:31415`],
+    ['kubectl', 'port-forward', 'deployment/superfield-app', `${config.port}:31415`],
     {
       cwd: REPO_ROOT,
       env: { ...process.env, KUBECONFIG: config.kubeconfigPath },
@@ -523,9 +577,9 @@ async function main(): Promise<void> {
   }
 
   if (shouldDelete) {
-    // If CALYPSO_DEMO_CLUSTER is set, delete only that cluster; otherwise
-    // delete every calypso-demo-* cluster found on this host.
-    const targeted = process.env.CALYPSO_DEMO_CLUSTER;
+    // If SUPERFIELD_DEMO_CLUSTER is set, delete only that cluster; otherwise
+    // delete every superfield-demo-* cluster found on this host.
+    const targeted = process.env.SUPERFIELD_DEMO_CLUSTER;
     const toDelete = targeted ? [targeted] : listDemoClusters();
 
     if (toDelete.length === 0) {
@@ -552,18 +606,11 @@ async function main(): Promise<void> {
     console.log(
       `\n[k3d] Creating cluster '${config.clusterName}' (db-port=${config.dbPort}, app-port=${config.port}).`,
     );
-    await run(
-      [
-        'k3d',
-        'cluster',
-        'create',
-        config.clusterName,
-        '--port',
-        `${config.dbPort}:5432@loadbalancer`,
-        '--wait',
-      ],
-      { cwd: REPO_ROOT, kubeconfigPath: config.kubeconfigPath, phase: 'cluster bootstrap' },
-    );
+    await run(['k3d', 'cluster', 'create', config.clusterName, '--wait'], {
+      cwd: REPO_ROOT,
+      kubeconfigPath: config.kubeconfigPath,
+      phase: 'cluster bootstrap',
+    });
   }
 
   await run(['k3d', 'kubeconfig', 'write', config.clusterName, '--output', config.kubeconfigPath], {
@@ -584,7 +631,7 @@ async function main(): Promise<void> {
     phase: 'database bootstrap',
   });
   await run(
-    ['kubectl', 'rollout', 'status', 'statefulset/calypso-dev-postgres', '--timeout=120s'],
+    ['kubectl', 'rollout', 'status', 'statefulset/superfield-dev-postgres', '--timeout=120s'],
     {
       cwd: REPO_ROOT,
       kubeconfigPath: config.kubeconfigPath,
@@ -602,7 +649,9 @@ async function main(): Promise<void> {
   await deployDemoImage(config, imageRef);
 
   console.log(`[demo] Cluster: ${config.clusterName}`);
-  console.log(`[demo] To delete: CALYPSO_DEMO_CLUSTER=${config.clusterName} bun run demo --delete`);
+  console.log(
+    `[demo] To delete: SUPERFIELD_DEMO_CLUSTER=${config.clusterName} bun run demo --delete`,
+  );
 
   const portForward = startPortForward(config);
   try {
