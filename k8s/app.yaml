@@ -60,6 +60,11 @@ spec:
                 secretKeyRef:
                   name: superfield-secrets
                   key: ANALYTICS_DATABASE_URL
+            - name: DICTIONARY_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: superfield-secrets
+                  key: DICTIONARY_DATABASE_URL
             - name: SUBSTACK_API_KEY
               valueFrom:
                 secretKeyRef:

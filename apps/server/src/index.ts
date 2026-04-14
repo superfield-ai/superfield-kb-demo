@@ -454,8 +454,10 @@ export default {
       if (legalHoldRes) return withTrace(legalHoldRes);
     }
 
-    // Serve static assets — path is relative to this file, not process cwd
-    const webDist = `${import.meta.dir}/../../web/dist`;
+    // Serve static assets. import.meta.dir is the compiled bundle dir (/app/dist)
+    // at runtime, so we derive the path from process.cwd() instead — which is
+    // the repo root in dev and /app in the release container (WORKDIR /app).
+    const webDist = `${process.cwd()}/apps/web/dist`;
     const staticFilePath = `${webDist}${url.pathname === '/' ? '/index.html' : url.pathname}`;
     const file = Bun.file(staticFilePath);
     if (await file.exists()) {

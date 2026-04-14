@@ -205,6 +205,7 @@ export function buildDemoSecretManifests(_config: DemoConfig): string {
     ANALYTICS_DATABASE_URL: `postgres://analytics_w:${DEMO_DB_PASSWORDS.analytics}@${DB_HOST}:5432/superfield_analytics`,
     AUDIT_DATABASE_URL: `postgres://audit_w:${DEMO_DB_PASSWORDS.audit}@${DB_HOST}:5432/superfield_audit`,
     DATABASE_URL: `postgres://app_rw:${DEMO_DB_PASSWORDS.app}@${DB_HOST}:5432/superfield_app`,
+    DICTIONARY_DATABASE_URL: `postgres://dict_rw:${DEMO_DB_PASSWORDS.dictionary}@${DB_HOST}:5432/superfield_dictionary`,
   };
 
   const appSecrets = {
@@ -600,6 +601,45 @@ async function main(): Promise<void> {
 
   const config = demoConfig();
 
+  // Track the port-forward child process so teardown can kill it.
+  let portForward: ReturnType<typeof startPortForward> | null = null;
+  let cleanupDone = false;
+
+  async function teardown(reason?: string) {
+    if (cleanupDone) return;
+    cleanupDone = true;
+    if (reason) console.log(`\n[demo] ${reason}`);
+    try {
+      portForward?.kill();
+    } catch {
+      // best effort
+    }
+    console.log(`[demo] Deleting cluster '${config.clusterName}'...`);
+    try {
+      await run(['k3d', 'cluster', 'delete', config.clusterName], {
+        cwd: REPO_ROOT,
+        kubeconfigPath: config.kubeconfigPath,
+        phase: 'cluster teardown',
+      });
+      console.log(`[demo] Cluster '${config.clusterName}' deleted.`);
+    } catch (err) {
+      console.error(
+        `[demo] Failed to delete cluster: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  // Register signal handlers immediately so Ctrl-C during a slow build step
+  // (image build, rollout wait) still triggers cluster teardown.
+  process.on('SIGINT', async () => {
+    await teardown('Interrupted (SIGINT). Tearing down...');
+    process.exit(130);
+  });
+  process.on('SIGTERM', async () => {
+    await teardown('Terminated (SIGTERM). Tearing down...');
+    process.exit(143);
+  });
+
   if (clusterExists(config)) {
     console.log(`\n[k3d] Reusing cluster '${config.clusterName}'.`);
   } else {
@@ -653,7 +693,7 @@ async function main(): Promise<void> {
     `[demo] To delete: SUPERFIELD_DEMO_CLUSTER=${config.clusterName} bun run demo --delete`,
   );
 
-  const portForward = startPortForward(config);
+  portForward = startPortForward(config);
   try {
     try {
       await waitForHealth(`http://127.0.0.1:${config.port}/health/live`);
@@ -670,11 +710,7 @@ async function main(): Promise<void> {
     console.log(`[demo] Demo URL: http://127.0.0.1:${config.port}/health/live`);
     await runInteractiveLoop(config);
   } finally {
-    try {
-      portForward.kill();
-    } catch {
-      // best effort
-    }
+    await teardown();
   }
 }
 
