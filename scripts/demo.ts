@@ -324,16 +324,6 @@ async function run(command: string[], opts: RunOptions): Promise<void> {
   }
 }
 
-function capture(command: string[], kubeconfigPath: string): string {
-  const result = Bun.spawnSync(command, {
-    cwd: REPO_ROOT,
-    env: { ...process.env, KUBECONFIG: kubeconfigPath },
-    stdout: 'pipe',
-    stderr: 'pipe',
-  });
-  return new TextDecoder().decode(result.stdout).trim();
-}
-
 // ---------------------------------------------------------------------------
 // Cluster helpers
 // ---------------------------------------------------------------------------
