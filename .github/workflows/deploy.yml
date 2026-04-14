@@ -1,4 +1,4 @@
-# deploy.yml — GitOps deploy workflow for Calypso
+# deploy.yml — GitOps deploy workflow for Superfield
 #
 # Deployment is always an explicit human action via workflow_dispatch.
 # Release (release.yml) and deploy are separate concerns:

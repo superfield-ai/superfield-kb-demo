@@ -67,7 +67,7 @@ jobs:
     timeout-minutes: 20
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-      NAMESPACE: calypso-demo
+      NAMESPACE: superfield-demo
 
     steps:
       - uses: actions/checkout@v4
@@ -99,12 +99,12 @@ jobs:
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
           MNEMONIC: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
-          CALYPSO_IMAGE_TAG: branch-test
+          SUPERFIELD_IMAGE_TAG: branch-test
 
       - name: Verify deployment
         run: bash scripts/ci/verify-init.sh
         env:
-          NAMESPACE: calypso-demo
+          NAMESPACE: superfield-demo
           DB_MODE: local
 
       - name: App smoke test
@@ -125,7 +125,7 @@ jobs:
     timeout-minutes: 20
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-      NAMESPACE: calypso-demo
+      NAMESPACE: superfield-demo
 
     steps:
       - uses: actions/checkout@v4
@@ -165,7 +165,7 @@ jobs:
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
           MNEMONIC: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
-          CALYPSO_IMAGE_TAG: branch-test
+          SUPERFIELD_IMAGE_TAG: branch-test
           REMOTE_PG_HOST: 172.17.0.1
           REMOTE_PG_PORT: '5432'
           REMOTE_PG_ADMIN_DB: postgres
@@ -176,7 +176,7 @@ jobs:
       - name: Verify deployment
         run: bash scripts/ci/verify-init.sh
         env:
-          NAMESPACE: calypso-demo
+          NAMESPACE: superfield-demo
           DB_MODE: remote
 
       - name: Verify idempotency — run init-host.sh a second time
@@ -184,7 +184,7 @@ jobs:
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
           MNEMONIC: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
-          CALYPSO_IMAGE_TAG: branch-test
+          SUPERFIELD_IMAGE_TAG: branch-test
           REMOTE_PG_HOST: 172.17.0.1
           REMOTE_PG_PORT: '5432'
           REMOTE_PG_ADMIN_DB: postgres
@@ -215,7 +215,7 @@ jobs:
     timeout-minutes: 20
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-      NAMESPACE: calypso-demo
+      NAMESPACE: superfield-demo
 
     steps:
       - uses: actions/checkout@v4
@@ -236,12 +236,12 @@ jobs:
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
           MNEMONIC: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
-          CALYPSO_IMAGE_TAG: ${{ needs.preflight.outputs.release-tag }}
+          SUPERFIELD_IMAGE_TAG: ${{ needs.preflight.outputs.release-tag }}
 
       - name: Verify deployment
         run: bash scripts/ci/verify-init.sh
         env:
-          NAMESPACE: calypso-demo
+          NAMESPACE: superfield-demo
           DB_MODE: local
 
       - name: App smoke test
@@ -268,7 +268,7 @@ jobs:
     timeout-minutes: 20
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-      NAMESPACE: calypso-demo
+      NAMESPACE: superfield-demo
 
     steps:
       - uses: actions/checkout@v4
@@ -297,7 +297,7 @@ jobs:
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
           MNEMONIC: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
-          CALYPSO_IMAGE_TAG: ${{ needs.preflight.outputs.release-tag }}
+          SUPERFIELD_IMAGE_TAG: ${{ needs.preflight.outputs.release-tag }}
           REMOTE_PG_HOST: 172.17.0.1
           REMOTE_PG_PORT: '5432'
           REMOTE_PG_ADMIN_DB: postgres
@@ -308,7 +308,7 @@ jobs:
       - name: Verify deployment
         run: bash scripts/ci/verify-init.sh
         env:
-          NAMESPACE: calypso-demo
+          NAMESPACE: superfield-demo
           DB_MODE: remote
 
       - name: Verify idempotency — run init-host.sh a second time
@@ -316,7 +316,7 @@ jobs:
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
           MNEMONIC: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
-          CALYPSO_IMAGE_TAG: ${{ needs.preflight.outputs.release-tag }}
+          SUPERFIELD_IMAGE_TAG: ${{ needs.preflight.outputs.release-tag }}
           REMOTE_PG_HOST: 172.17.0.1
           REMOTE_PG_PORT: '5432'
           REMOTE_PG_ADMIN_DB: postgres

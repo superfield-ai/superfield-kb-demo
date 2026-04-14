@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      NAMESPACE: calypso-demo
+      NAMESPACE: superfield-demo
 
     steps:
       - uses: actions/checkout@v4
@@ -44,8 +44,8 @@ jobs:
 
       - name: Build branch image and push to local registry
         run: |
-          docker build -t localhost:5000/calypso/calypso-starter-ts:branch-test .
-          docker push localhost:5000/calypso/calypso-starter-ts:branch-test
+          docker build -t localhost:5000/superfield/superfield-starter-ts:branch-test .
+          docker push localhost:5000/superfield/superfield-starter-ts:branch-test
 
       - name: Install talosctl
         run: curl -sL https://talos.dev/install | sh
@@ -111,14 +111,14 @@ jobs:
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
           MNEMONIC: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
-          CALYPSO_IMAGE_TAG: branch-test
-          CALYPSO_IMAGE_REPO: localhost:5000/calypso/calypso-starter-ts
+          SUPERFIELD_IMAGE_TAG: branch-test
+          SUPERFIELD_IMAGE_REPO: localhost:5000/superfield/superfield-starter-ts
 
       - name: Verify deployment
         if: steps.talos-prereq.outputs.available == 'true'
         run: bash scripts/ci/verify-init.sh
         env:
-          NAMESPACE: calypso-demo
+          NAMESPACE: superfield-demo
           DB_MODE: local
 
       - name: App smoke test
