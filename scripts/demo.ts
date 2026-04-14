@@ -500,7 +500,14 @@ async function waitForHealth(url: string, timeoutMs = 120_000): Promise<void> {
 
 function startPortForward(config: DemoConfig) {
   const child = Bun.spawn(
-    ['kubectl', 'port-forward', 'deployment/superfield-app', `${config.port}:31415`],
+    [
+      'kubectl',
+      'port-forward',
+      '--address',
+      '0.0.0.0',
+      'deployment/superfield-app',
+      `${config.port}:31415`,
+    ],
     {
       cwd: REPO_ROOT,
       env: { ...process.env, KUBECONFIG: config.kubeconfigPath },

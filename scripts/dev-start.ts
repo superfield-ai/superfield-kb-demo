@@ -148,6 +148,9 @@ async function main() {
       AUDIT_DATABASE_URL: process.env.AUDIT_DATABASE_URL,
       ANALYTICS_DATABASE_URL: process.env.ANALYTICS_DATABASE_URL,
       PORT: String(API_PORT),
+      // Bind the API server to loopback in dev — it is accessed via the Vite
+      // proxy and should never be directly reachable on external interfaces.
+      HOSTNAME: '127.0.0.1',
     },
     stdout: 'inherit',
     stderr: 'inherit',

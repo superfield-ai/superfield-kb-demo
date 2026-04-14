@@ -134,6 +134,7 @@ export const appState: AppState = {
 
 export default {
   port: Number(process.env.PORT) || 31415,
+  hostname: process.env.HOSTNAME ?? '0.0.0.0',
 
   websocket: websocketHandler,
 
