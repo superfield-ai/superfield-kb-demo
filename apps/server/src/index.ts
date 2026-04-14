@@ -134,7 +134,9 @@ export const appState: AppState = {
 
 export default {
   port: Number(process.env.PORT) || 31415,
-  hostname: process.env.HOSTNAME ?? '0.0.0.0',
+  // SERVER_HOSTNAME controls the bind address. HOSTNAME is reserved by
+  // Kubernetes (set to the pod name) and must not be used as a bind address.
+  hostname: process.env.SERVER_HOSTNAME ?? '0.0.0.0',
 
   websocket: websocketHandler,
 

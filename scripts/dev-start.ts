@@ -150,7 +150,7 @@ async function main() {
       PORT: String(API_PORT),
       // Bind the API server to loopback in dev — it is accessed via the Vite
       // proxy and should never be directly reachable on external interfaces.
-      HOSTNAME: '127.0.0.1',
+      SERVER_HOSTNAME: '127.0.0.1',
     },
     stdout: 'inherit',
     stderr: 'inherit',
