@@ -647,61 +647,64 @@ async function main(): Promise<void> {
     process.exit(143);
   });
 
-  if (clusterExists(config)) {
-    console.log(`\n[k3d] Reusing cluster '${config.clusterName}'.`);
-  } else {
-    console.log(
-      `\n[k3d] Creating cluster '${config.clusterName}' (db-port=${config.dbPort}, app-port=${config.port}).`,
+  try {
+    if (clusterExists(config)) {
+      console.log(`\n[k3d] Reusing cluster '${config.clusterName}'.`);
+    } else {
+      console.log(
+        `\n[k3d] Creating cluster '${config.clusterName}' (db-port=${config.dbPort}, app-port=${config.port}).`,
+      );
+      await run(['k3d', 'cluster', 'create', config.clusterName, '--wait'], {
+        cwd: REPO_ROOT,
+        kubeconfigPath: config.kubeconfigPath,
+        phase: 'cluster bootstrap',
+      });
+    }
+
+    await run(
+      ['k3d', 'kubeconfig', 'write', config.clusterName, '--output', config.kubeconfigPath],
+      {
+        cwd: REPO_ROOT,
+        kubeconfigPath: config.kubeconfigPath,
+        phase: 'cluster bootstrap',
+      },
     );
-    await run(['k3d', 'cluster', 'create', config.clusterName, '--wait'], {
-      cwd: REPO_ROOT,
-      kubeconfigPath: config.kubeconfigPath,
-      phase: 'cluster bootstrap',
-    });
-  }
 
-  await run(['k3d', 'kubeconfig', 'write', config.clusterName, '--output', config.kubeconfigPath], {
-    cwd: REPO_ROOT,
-    kubeconfigPath: config.kubeconfigPath,
-    phase: 'cluster bootstrap',
-  });
-
-  console.log('[demo] Applying dev Postgres manifests.');
-  await run(['kubectl', 'apply', '-f', join(REPO_ROOT, 'k8s', 'dev', 'dev-secrets.yaml')], {
-    cwd: REPO_ROOT,
-    kubeconfigPath: config.kubeconfigPath,
-    phase: 'database bootstrap',
-  });
-  await run(['kubectl', 'apply', '-f', join(REPO_ROOT, 'k8s', 'dev', 'postgres.yaml')], {
-    cwd: REPO_ROOT,
-    kubeconfigPath: config.kubeconfigPath,
-    phase: 'database bootstrap',
-  });
-  await run(
-    ['kubectl', 'rollout', 'status', 'statefulset/superfield-dev-postgres', '--timeout=120s'],
-    {
+    console.log('[demo] Applying dev Postgres manifests.');
+    await run(['kubectl', 'apply', '-f', join(REPO_ROOT, 'k8s', 'dev', 'dev-secrets.yaml')], {
       cwd: REPO_ROOT,
       kubeconfigPath: config.kubeconfigPath,
       phase: 'database bootstrap',
-    },
-  );
+    });
+    await run(['kubectl', 'apply', '-f', join(REPO_ROOT, 'k8s', 'dev', 'postgres.yaml')], {
+      cwd: REPO_ROOT,
+      kubeconfigPath: config.kubeconfigPath,
+      phase: 'database bootstrap',
+    });
+    await run(
+      ['kubectl', 'rollout', 'status', 'statefulset/superfield-dev-postgres', '--timeout=120s'],
+      {
+        cwd: REPO_ROOT,
+        kubeconfigPath: config.kubeconfigPath,
+        phase: 'database bootstrap',
+      },
+    );
 
-  console.log('[demo] Bootstrapping databases and roles.');
-  await bootstrapDatabase(config);
+    console.log('[demo] Bootstrapping databases and roles.');
+    await bootstrapDatabase(config);
 
-  console.log('[demo] Building and importing the local release image.');
-  const imageRef = await buildDemoImage(config);
+    console.log('[demo] Building and importing the local release image.');
+    const imageRef = await buildDemoImage(config);
 
-  console.log('[demo] Applying the app runtime manifest.');
-  await deployDemoImage(config, imageRef);
+    console.log('[demo] Applying the app runtime manifest.');
+    await deployDemoImage(config, imageRef);
 
-  console.log(`[demo] Cluster: ${config.clusterName}`);
-  console.log(
-    `[demo] To delete: SUPERFIELD_DEMO_CLUSTER=${config.clusterName} bun run demo --delete`,
-  );
+    console.log(`[demo] Cluster: ${config.clusterName}`);
+    console.log(
+      `[demo] To delete: SUPERFIELD_DEMO_CLUSTER=${config.clusterName} bun run demo --delete`,
+    );
 
-  portForward = startPortForward(config);
-  try {
+    portForward = startPortForward(config);
     try {
       await waitForHealth(`http://127.0.0.1:${config.port}/health/live`);
     } catch (error) {
